@@ -7,11 +7,13 @@ import { environment } from './../../environments/environment.prod';
 import { BuilderComponent } from './builder/builder.component';
 import { AngularFireAuthModule } from "angularfire2/auth";
 import { FormsModule } from "@angular/forms";
+import { HttpClientModule } from "@angular/common/http";
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
+    HttpClientModule,
     MatModule,
     CarouselModule,
     AngularFireModule.initializeApp(environment.firebase),

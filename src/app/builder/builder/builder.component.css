@@ -17,6 +17,20 @@
     background-size: contain;
 }
 
+.header-image img {
+    width: 45px;
+    border-radius: 50%;
+    margin-left: -5px;
+}
+
+.align-center {
+    text-align: center;
+}
+
 md-card-actions {
     text-align: right;
+}
+
+md-input-container {
+    width: 100%;
 }

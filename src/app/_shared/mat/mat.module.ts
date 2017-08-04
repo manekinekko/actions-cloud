@@ -1,11 +1,18 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-import { MdToolbarModule, MdCardModule, MdButtonModule } from "@angular/material";
-export const MdModules = [
+import {
   MdToolbarModule,
   MdCardModule,
-  MdButtonModule
+  MdButtonModule,
+  MdInputModule
+} from "@angular/material";
+export const MdModules = [
+  BrowserAnimationsModule,
+  MdToolbarModule,
+  MdCardModule,
+  MdButtonModule,
+  MdInputModule
 ];
 
 @NgModule({

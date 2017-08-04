@@ -1,4 +1,82 @@
-<app-carousel-group [selected]="selectedCarousel" [showDots]="showDots">
+<app-carousel-group (transition)="onTransition($event)" [selected]="selectedCarousel" [showDots]="showDots">
+    <app-carousel>
+
+        <md-card class="card">
+            <md-card-header>
+                <div md-card-avatar class="header-image"></div>
+                <md-card-title>Actions on Goolge Builder</md-card-title>
+                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
+            </md-card-header>
+            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
+            <md-card-content>
+                <p>
+                    Actions on Google lets you build apps for the Google Assistant. Your apps can help you engage users through Google Home, eligible Android phones, iPhones, and in the future, through every experience where the Google Assistant is available.
+                </p>
+            </md-card-content>
+            <md-card-actions class="align-center">
+                <button color="primary" md-raised-button (click)="start()">START</button>
+            </md-card-actions>
+        </md-card>
+
+    </app-carousel>
+    <app-carousel>
+
+        <md-card class="card">
+            <md-card-header>
+                <div md-card-avatar class="header-image">
+                    <img *ngIf="user" [src]="user.photoURL">
+                </div>
+                <md-card-title>Link your Google account</md-card-title>
+                <md-card-subtitle *ngIf="user">{{ user.displayName }} ({{ user.email }})</md-card-subtitle>
+            </md-card-header>
+            <md-card-content>
+                <br>
+                <p>
+                    Allow this application to access your account information in order to create:
+                </p>
+                <ul>
+                    <li>An API.AI project to model your dialog;</li>
+                    <li>A Google Cloud Platform project to deploy the Cloud Function.</li>
+                </ul>
+            </md-card-content>
+            <md-card-actions>
+                <a *ngIf="!user" md-button target="__blank" href="https://cloud.google.com/">CREATE AN ACCOUNT</a>
+                <button *ngIf="!user; else connectedRef" color="primary" md-raised-button (click)="login()">LOGIN</button>
+                <ng-template #connectedRef>
+                    <button color="warn" md-raised-button (click)="logout()">UNLINK</button>
+                    <button color="primary" md-raised-button (click)="next(2)">NEXT</button>
+                </ng-template>
+            </md-card-actions>
+        </md-card>
+
+    </app-carousel>
+    <app-carousel>
+
+        <md-card class="card">
+            <md-card-header>
+                <div md-card-avatar class="header-image">
+                    <img *ngIf="user" [src]="user.photoURL">
+                </div>
+                <md-card-title>Create your project</md-card-title>
+                <md-card-subtitle *ngIf="user">{{ user.displayName }} ({{ user.email }})</md-card-subtitle>
+            </md-card-header>
+            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
+            <md-card-content>
+                <form #form="ngForm">
+                    <p>
+                        <md-input-container>
+                            <input [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Your bot name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
+                            <md-hint>Must be 6-30 lowercase letters, digits or hyphens, start with a letter and have no trailing hyphen.</md-hint>
+                        </md-input-container>
+                    </p>
+                </form>
+            </md-card-content>
+            <md-card-actions>
+                <button color="primary" md-raised-button [disabled]="form.invalid" (click)="create()">CREATE</button>
+            </md-card-actions>
+        </md-card>
+
+    </app-carousel>
     <app-carousel>
 
         <md-card class="card">
@@ -19,67 +97,7 @@
         </md-card>
 
     </app-carousel>
-    <app-carousel style="background: blue;">
-
-        <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Builder</md-card-title>
-                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
-            </md-card-header>
-            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
-            <md-card-content>
-                <p>
-                    Actions on Google lets you build apps for the Google Assistant. Your apps can help you engage users through Google Home, eligible Android phones, iPhones, and in the future, through every experience where the Google Assistant is available.
-                </p>
-            </md-card-content>
-            <md-card-actions>
-                <button color="primary" md-raised-button (click)="login()">START</button>
-            </md-card-actions>
-        </md-card>
-
-    </app-carousel>
-    <app-carousel style="background: green;">
-
-        <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Builder</md-card-title>
-                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
-            </md-card-header>
-            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
-            <md-card-content>
-                <p>
-                    Actions on Google lets you build apps for the Google Assistant. Your apps can help you engage users through Google Home, eligible Android phones, iPhones, and in the future, through every experience where the Google Assistant is available.
-                </p>
-            </md-card-content>
-            <md-card-actions>
-                <button color="primary" md-raised-button (click)="login()">START</button>
-            </md-card-actions>
-        </md-card>
-
-    </app-carousel>
-    <app-carousel style="background: yellow;">
-
-        <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Builder</md-card-title>
-                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
-            </md-card-header>
-            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
-            <md-card-content>
-                <p>
-                    Actions on Google lets you build apps for the Google Assistant. Your apps can help you engage users through Google Home, eligible Android phones, iPhones, and in the future, through every experience where the Google Assistant is available.
-                </p>
-            </md-card-content>
-            <md-card-actions>
-                <button color="primary" md-raised-button (click)="login()">START</button>
-            </md-card-actions>
-        </md-card>
-
-    </app-carousel>
-    <app-carousel style="background: cyan;">
+    <app-carousel>
 
         <md-card class="card">
             <md-card-header>
