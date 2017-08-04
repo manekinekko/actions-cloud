@@ -7,7 +7,9 @@ import {
   ViewChild,
   ElementRef,
   Renderer2,
-  Input
+  Input,
+  Output,
+  EventEmitter
 } from "@angular/core";
 
 @Component({
@@ -71,6 +73,9 @@ export class CarouselGroupComponent implements OnInit {
 
   @Input() selected: number;
   @Input() showDots: boolean;
+
+  @Output() transition: EventEmitter<number>;
+
   step: number;
 
   constructor(
@@ -79,6 +84,7 @@ export class CarouselGroupComponent implements OnInit {
     this.step = 560;
     this.selected = 0;
     this.showDots = true;
+    this.transition = new EventEmitter();
   }
 
   ngOnInit() {
@@ -86,6 +92,12 @@ export class CarouselGroupComponent implements OnInit {
 
   ngAfterContentInit(){
     this.translate();
+  }
+
+  ngOnChanges(s) {
+    if(s.selected) {
+      this.translate();
+    }
   }
 
   select(index:number) {
@@ -100,6 +112,7 @@ export class CarouselGroupComponent implements OnInit {
 
   translate() {
     this.r.setStyle(this.sectionRef.nativeElement, 'transform', `translate(-${ this.selected * this.step }px)`);
+    this.transition.emit(this.selected);
   }
 
 }
