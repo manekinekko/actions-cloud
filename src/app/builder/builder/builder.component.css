@@ -1,0 +1,22 @@
+:host {
+    display: block;
+    width: 100%;
+    margin: 20px auto;
+}
+
+@media (max-width: 600px) {
+     :host {
+        display: block;
+        width: 98vw;
+        margin: 10px auto;
+    }
+}
+
+.header-image {
+    background-image: url('https://developers.google.com/actions/assistant.png');
+    background-size: contain;
+}
+
+md-card-actions {
+    text-align: right;
+}
