@@ -1,3 +1,5 @@
+<div style="text-align:center"><img src="https://user-images.githubusercontent.com/1699357/28988374-d97a1e20-796f-11e7-986e-f8c9eb7cecfe.png" /></div>
+
 # ActionsOnGoogleBuilder
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.3.0-rc.5.
