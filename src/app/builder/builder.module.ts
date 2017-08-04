@@ -6,10 +6,12 @@ import { AngularFireModule } from 'angularfire2';
 import { environment } from './../../environments/environment.prod';
 import { BuilderComponent } from './builder/builder.component';
 import { AngularFireAuthModule } from "angularfire2/auth";
+import { FormsModule } from "@angular/forms";
 
 @NgModule({
   imports: [
     CommonModule,
+    FormsModule,
     MatModule,
     CarouselModule,
     AngularFireModule.initializeApp(environment.firebase),
