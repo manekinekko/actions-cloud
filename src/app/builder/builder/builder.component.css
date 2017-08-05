@@ -39,3 +39,12 @@ md-input-container {
     color: #F44336;
     font-weight: bold;
 }
+
+md-progress-spinner {
+    width: 24px;
+    height: 24px;
+}
+
+md-icon[md-list-icon] {
+    color: green;
+}

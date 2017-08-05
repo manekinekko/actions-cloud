@@ -65,9 +65,59 @@
                 <form #form="ngForm">
                     <p>
                         <md-input-container>
-                            <input [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Your bot name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
+                            <input [disabled]="createdPorjectOperation.done" [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Your bot name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
                             <md-hint>Must be 6-30 lowercase letters, digits or hyphens, start with a letter and have no trailing hyphen.</md-hint>
                         </md-input-container>
+                    </p>
+                    <p>
+                        <md-list>
+                            <h3 md-subheader>Applying operations</h3>
+                            <md-list-item>
+
+                                <md-icon md-list-icon *ngIf="false">done</md-icon>
+                                <div md-list-icon *ngIf="true">
+                                    <md-progress-spinner color="primary" mode="indeterminate">
+                                    </md-progress-spinner>
+                                </div>
+
+                                <h4 md-line>Creating project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
+                            </md-list-item>
+
+                            <md-list-item>
+
+                                <md-icon md-list-icon *ngIf="false">done</md-icon>
+                                <div md-list-icon *ngIf="true">
+                                    <md-progress-spinner color="primary" mode="indeterminate">
+                                    </md-progress-spinner>
+                                </div>
+
+                                <h4 md-line>Checking project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
+                            </md-list-item>
+
+                            <md-list-item>
+
+                                <md-icon md-list-icon *ngIf="false">done</md-icon>
+                                <div md-list-icon *ngIf="true">
+                                    <md-progress-spinner color="primary" mode="indeterminate">
+                                    </md-progress-spinner>
+                                </div>
+
+                                <h4 md-line>Checking billing permissions for project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
+                            </md-list-item>
+
+                            <md-list-item>
+
+                                <md-icon md-list-icon *ngIf="false">done</md-icon>
+                                <div md-list-icon *ngIf="true">
+                                    <md-progress-spinner color="primary" mode="indeterminate">
+                                    </md-progress-spinner>
+                                </div>
+
+                                <h4 md-line>Creating cloud function "agent" for project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
+                            </md-list-item>
+
+                        </md-list>
+                        <md-divider></md-divider>
                     </p>
                 </form>
             </md-card-content>

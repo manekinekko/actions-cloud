@@ -1,9 +1,8 @@
+import { GcpService } from './../gcp.service';
 import { Component, OnInit } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs/Observable";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
-import { HttpHeaders } from "@angular/common/http";
 
 @Component({
   selector: "app-builder",
@@ -15,11 +14,8 @@ export class BuilderComponent {
   showDots: boolean;
   selectedCarousel: number;
   projectName: string;
-  accessToken: {
-    google: string;
-  };
   error: {
-    message: string
+    message: string;
   };
   createdPorjectOperation: {
     done: boolean;
@@ -27,12 +23,12 @@ export class BuilderComponent {
   };
   isWorking: boolean;
 
-  constructor(public afAuth: AngularFireAuth) {
-    this.accessToken = {
-      google: null
-    };
+  constructor(
+    public afAuth: AngularFireAuth,
+    public gcp: GcpService
+  ) {
     this.error = {
-      message: ''
+      message: ""
     };
     this.createdPorjectOperation = {
       done: null /* must be null for the initial state (see md-progress-bar) */
@@ -44,12 +40,14 @@ export class BuilderComponent {
       console.log(user);
 
       if (user) {
-        const storedIndex = parseInt(localStorage.getItem('ui.selectedCarousel'), 10);
+        const storedIndex = parseInt(
+          localStorage.getItem("ui.selectedCarousel"),
+          10
+        );
         if (storedIndex) {
           this.next(storedIndex);
           this.showDots = true;
-        }
-        else {
+        } else {
           this.start();
         }
       } else {
@@ -59,16 +57,24 @@ export class BuilderComponent {
   }
 
   ngOnInit() {
-    this.accessToken.google = localStorage.getItem("accessToken.google");
+    this.gcp.restoreToken();
+
+    this.gcp.operations.subscribe(op => {
+
+      if (op.error) {
+        this.error.message = op.error;
+      }
+
+      this.isWorking = op.isWorking;
+
+    });
   }
 
   welcomeScreen() {
     this.showDots = false;
     this.next(0);
     this.projectName = "";
-    this.accessToken = {
-      google: null
-    };
+    this.gcp.resetToken();
   }
 
   start() {
@@ -78,60 +84,27 @@ export class BuilderComponent {
 
   next(index: number) {
     this.selectedCarousel = index;
-    localStorage.setItem('ui.selectedCarousel', `${this.selectedCarousel}`);
+    localStorage.setItem("ui.selectedCarousel", `${this.selectedCarousel}`);
   }
 
   async create() {
-    
     this.isWorking = true;
 
-    if (this.accessToken.google) {
-      const createdPorject = await this.fetch('https://cloudresourcemanager.googleapis.com/v1/projects', {
-        method: "POST",
-        body: JSON.stringify({
-          name: this.projectName,
-          projectId: this.projectName,
-          labels: {
-            mylabel: this.projectName
-          }
-        })
-      });
-      this.isWorking = false;
-
-      if (createdPorject.error) {
-        this.error = createdPorject.error;
-      }
-      else if (createdPorject.name){
-        this.error = {
-          message: ''
-        };
-
-        this.isWorking = true; 
-        setTimeout( async (_) => {
-          this.createdPorjectOperation = await this.fetch(`https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`);
-          this.error = this.createdPorjectOperation.error;
-          this.isWorking = false;
-        }, 4000 );
-
-      }
-
-    } else {
-      console.warn("Google Access Token is not set", this.accessToken.google);
-    }
+    const operation = await this.gcp.createProjects(this.projectName) as any;
   }
 
   async login() {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope("https://www.googleapis.com/auth/cloud-platform");
     provider.addScope("https://www.googleapis.com/auth/cloudplatformprojects");
+    provider.addScope("https://www.googleapis.com/auth/cloudfunctions");
     const loginInfo = await this.afAuth.auth.signInWithPopup(provider);
-    this.accessToken.google = loginInfo.credential.accessToken;
-    localStorage.setItem("accessToken.google", this.accessToken.google);
+    this.gcp.setToken(loginInfo);
   }
 
   async logout() {
     await this.afAuth.auth.signOut();
-    this.accessToken.google = null;
+    this.gcp.resetToken();
   }
 
   onTransition(index) {
@@ -141,21 +114,4 @@ export class BuilderComponent {
     }
   }
 
-  async fetch(url, opts = {}) {
-    console.log('requesting', url);
-    
-    opts['headers'] = {
-      "Authorization": `Bearer ${this.accessToken.google}`
-    };
-
-    try {
-      const f = await fetch(url, opts);
-      const r = await f.json();
-      console.log(r);
-      return r;
-    }
-    catch(e) {
-
-    }
-  }
 }
