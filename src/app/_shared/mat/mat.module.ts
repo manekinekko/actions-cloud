@@ -5,14 +5,17 @@ import {
   MdToolbarModule,
   MdCardModule,
   MdButtonModule,
-  MdInputModule
+  MdInputModule,
+  MdProgressBarModule
 } from "@angular/material";
+
 export const MdModules = [
   BrowserAnimationsModule,
   MdToolbarModule,
   MdCardModule,
   MdButtonModule,
-  MdInputModule
+  MdInputModule,
+  MdProgressBarModule
 ];
 
 @NgModule({

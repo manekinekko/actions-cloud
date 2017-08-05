@@ -60,8 +60,8 @@
                 <md-card-title>Create your project</md-card-title>
                 <md-card-subtitle *ngIf="user">{{ user.displayName }} ({{ user.email }})</md-card-subtitle>
             </md-card-header>
-            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
             <md-card-content>
+
                 <form #form="ngForm">
                     <p>
                         <md-input-container>
@@ -72,9 +72,14 @@
                 </form>
             </md-card-content>
             <md-card-actions>
-                <button color="primary" md-raised-button [disabled]="form.invalid" (click)="create()">CREATE</button>
+                <span class="error-message" *ngIf="error?.message">{{ error?.message }}</span>
+                <button *ngIf="createdPorjectOperation.done === null; else projectCreatedDoneRef" color="primary" md-raised-button [disabled]="form.invalid" (click)="create()">CREATE</button>
+                <ng-template #projectCreatedDoneRef>
+                    <button color="primary" md-raised-button (click)="next(3)">NEXT</button>
+                </ng-template>
             </md-card-actions>
         </md-card>
+        <md-progress-bar *ngIf="isWorking" color="warn" mode="indeterminate"></md-progress-bar>
 
     </app-carousel>
     <app-carousel>

@@ -34,3 +34,8 @@ md-card-actions {
 md-input-container {
     width: 100%;
 }
+
+.error-message {
+    color: #F44336;
+    font-weight: bold;
+}
