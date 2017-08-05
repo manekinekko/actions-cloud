@@ -1,15 +1,30 @@
+import { ProjectBillingInfo, BillingAccount } from './gcp.service';
 import { Injectable } from "@angular/core";
 import { Subject } from "rxjs/Subject";
 import { MdSnackBar } from "@angular/material";
 
 export enum OperationType {
-  CreatingProject = 0,
-  CheckingProjectCreation = 1,
-  CheckingBilling = 2,
-  CheckingPermissions = 3,
-  CreatingCloudFunction = 4,
-  CheckingCloudFunction = 5,
-  UploadingProjectTemplate = 6
+  CreatingProject,
+  CheckingProjectAvailability,
+  CheckingBilling,
+  EnablingBilling,
+  CheckingPermissions,
+  CreatingCloudFunction,
+  CheckingCloudFunction,
+  UploadingProjectTemplate,
+}
+
+export interface ProjectBillingInfo {
+  name?: string;
+  projectId?: string;
+  billingAccountName?: string;
+  billingEnabled?: boolean;
+}
+
+export interface BillingAccount {
+  name: string;
+  open: boolean;
+  displayName: string;
 }
 
 export interface Step {
@@ -22,7 +37,7 @@ export interface Step {
 
 @Injectable()
 export class GcpService {
-  // operations: Subject<{ error?: any; id: OperationType; isWorking: boolean }>;
+  operations: Subject<Step[]>;
   operationSteps: Step[];
 
   accessToken: {
@@ -34,6 +49,14 @@ export class GcpService {
       google: null
     };
 
+    this.operations = new Subject();
+    this.resetOperations();
+    
+    //@todo remove this
+    this.__skipSteps(0, 1);
+  }
+
+  resetOperations() {
     this.operationSteps = [
       // CreatingProject
       {
@@ -43,13 +66,13 @@ export class GcpService {
         error: "",
         description: `Creating project...`
       },
-      // CheckingProjectCreation
+      // CheckingProjectAvailability
       {
         isValid: false,
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Checking project...`
+        description: `Checking project availability...`
       },
       // CheckingBilling
       {
@@ -58,6 +81,14 @@ export class GcpService {
         isWorking: false,
         error: "",
         description: `Checking billing...`
+      },
+      // EnablingBilling
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Enabling billing...`
       },
       // CheckingPermissions
       {
@@ -92,8 +123,20 @@ export class GcpService {
         description: `Uploading project template...`
       }
     ];
+  }
 
-    // this.operations = new Subject();
+  __skipSteps(from, to=null) {
+    if (!to) {
+      to = from;
+    }
+    this.operationSteps
+      .map((step, key) => {
+        if (key >= from && key <= to) {
+          step.isDirty = true;
+          step.isValid = true;
+        }
+        return step;
+      });
   }
 
   restoreToken() {
@@ -114,13 +157,32 @@ export class GcpService {
     localStorage.setItem("accessToken.google", this.accessToken.google);
   }
 
-  async createProjects(projectName) {
+  async createProjects(projectId: string) {
     if (this.accessToken.google) {
-      const createdPorject = await this.createCloudProject(projectName);
-      const checkedProject = !createdPorject.error && await this.checkProjectCreation(createdPorject);
-      console.log(checkedProject);
+
+      let createdPorject = {
+        name: projectId
+      } as any;
+
+      let checkedProject = {
+        response: {}
+      } as any;
+
+      // should we skip step 0?
+      if (!this.operationSteps[0].isValid) {
+        createdPorject = await this.createCloudProject(projectId);
+      }
       
-      // const createdCloudFunction = await this.createCloudFunction(projectName);
+      // should we skip step 1?
+      if (!this.operationSteps[1].isValid) {
+        checkedProject = !createdPorject.error && await this.checkProjectAvailability(createdPorject);
+      }
+
+      const billingAccount = await this.checkBilling();
+      const projectBillingInfo = this.enablingBillingInfo(projectId, billingAccount);
+      console.log(billingAccount, projectBillingInfo);
+      
+      // const createdCloudFunction = await this.createCloudFunction(projectId);
 
     } else {
       console.warn("Google Access Token is not set", this.accessToken.google);
@@ -129,7 +191,7 @@ export class GcpService {
     return Promise.resolve(true);
   }
 
-  async createCloudProject(projectName) {
+  async createCloudProject(projectId) {
     this.notify(OperationType.CreatingProject, true, false);
 
     const createdPorject = await this.fetch(
@@ -137,10 +199,10 @@ export class GcpService {
       {
         method: "POST",
         body: {
-          name: projectName,
-          projectId: projectName,
+          name: projectId,
+          projectId: projectId,
           labels: {
-            mylabel: projectName
+            mylabel: projectId
           }
         }
       }
@@ -159,38 +221,41 @@ export class GcpService {
     } else if (createdPorject.name) {
       // success
 
-      this.notify(OperationType.CreatingProject, false, true);
+      this.notify(OperationType.CreatingProject, false, true, null, `Project "${projectId}" created.`);
     }
 
     return createdPorject;
   }
 
-  //@todo
-  async checkProjectCreation(createdPorject) {
+  async checkProjectAvailability(createdPorject) {
     
     return new Promise( (resolve, reject) => {
 
-      this.notify(OperationType.CheckingProjectCreation, true, false);
+      this.notify(OperationType.CheckingProjectAvailability, true, false);
 
       let timer = null;
-      let response = null;
+      let projectAvailability = null;
 
       timer = setInterval( async (_) => {
+        
         try {
-          response = await this.fetch(
+          projectAvailability = await this.fetch(
             `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
           );
+          console.log(projectAvailability);
+          
 
-          if (response.error) {
-            this.notify(OperationType.CheckingProjectCreation, false, false, response.error);
+          if (projectAvailability.error) {
+            this.notify(OperationType.CheckingProjectAvailability, false, false, projectAvailability.error);
             clearInterval(timer);
-            resolve(response);
+            resolve(projectAvailability);
           }
-          else if (response.name) {
-            this.notify(OperationType.CheckingProjectCreation, true, true);
+          else if (projectAvailability.response) {
+            this.notify(OperationType.CheckingProjectAvailability, false, true, null, `Project "${createdPorject.name} is ready."`);
             clearInterval(timer);
-            resolve(response);
+            resolve(projectAvailability);
           }
+
         }
         catch(e){
             clearInterval(timer);
@@ -200,6 +265,53 @@ export class GcpService {
       }, 1000);
 
     });
+  }
+
+  async checkBilling(): Promise<ProjectBillingInfo> {
+
+    this.notify(OperationType.CheckingBilling, true, false);
+
+    const response = await this.fetch(`https://cloudbilling.googleapis.com/v1/billingAccounts`);
+    if (response.billingAccounts && response.billingAccounts.length > 0) {
+      
+      const account = response.billingAccounts[0] as BillingAccount;
+      if (account) {
+        const info = await this.fetch(`https://cloudbilling.googleapis.com/v1/${account.name}`);
+        if (info.open) {
+          this.notify(OperationType.CheckingBilling, false, true, null, `Found Billing account "${account.displayName}".`);
+          return Promise.resolve(account);
+        }
+        
+      }
+      
+    }
+    else {
+      this.notify(OperationType.CheckingBilling, false, false, {message:'No billing account found. Please create a billing account first and try again.'});
+      console.error('No billing account found. Please create a billing account first and try again.');
+    }
+
+    return null;
+  }
+
+  async enablingBillingInfo(projectId: string, billingAccountName: ProjectBillingInfo): Promise<ProjectBillingInfo> {
+    this.notify(OperationType.EnablingBilling, true, false);
+    
+    const projectBillingInfo: ProjectBillingInfo = await this.fetch(`https://cloudbilling.googleapis.com/v1/projects/${projectId}/billingInfo`, {
+      method: 'PUT',
+      body: {
+        billingAccountName: billingAccountName.name
+      }
+    });
+
+    if (projectBillingInfo.billingEnabled) {
+      this.notify(OperationType.EnablingBilling, false, true, null, `Enabled Billing for "${projectId}".`);
+      return projectBillingInfo;
+    }
+    else {
+      this.notify(OperationType.EnablingBilling, false, false, `Could not enable billing for "${projectId}".`);
+      return null;
+    }
+
   }
 
   //@todo
@@ -229,13 +341,18 @@ export class GcpService {
     id: OperationType,
     isWorking: boolean,
     isValid: boolean,
-    error: any = null
+    error: any = null,
+    description: string = null
   ) {
 
     let snackBar = null;
     this.operationSteps[id].isDirty = true;
     this.operationSteps[id].isWorking = isWorking;
     this.operationSteps[id].isValid = isValid;
+
+    if (description) {
+      this.operationSteps[id].description = description;
+    }
 
     if (error) {
       const errorMsg = `[${error.status}] ${error.message}`;
@@ -249,7 +366,10 @@ export class GcpService {
       this.operationSteps[id].error = '';
 
       if (snackBar){
-        snackBar.dismiss();
+        // snackBar.dismiss();
+        snackBar.afterDismissed().subscribe(() => {
+          this.resetOperations();
+        });
       }
     }
   }

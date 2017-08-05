@@ -33,7 +33,7 @@ export class BuilderComponent {
       done: null /* must be null for the initial state (see md-progress-bar) */
     };
     this.isWorking = false;
-    this.projectName = '';
+    this.projectName = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
     afAuth.authState.subscribe(user => {
       this.user = user;
       console.log(user);
@@ -85,6 +85,7 @@ export class BuilderComponent {
     provider.addScope("https://www.googleapis.com/auth/cloud-platform");
     provider.addScope("https://www.googleapis.com/auth/cloudplatformprojects");
     provider.addScope("https://www.googleapis.com/auth/cloudfunctions");
+    provider.addScope("https://www.googleapis.com/auth/cloud-billing");
     const loginInfo = await this.afAuth.auth.signInWithPopup(provider);
     this.gcp.setToken(loginInfo);
   }

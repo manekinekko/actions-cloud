@@ -79,7 +79,7 @@
                         </md-input-container>
                     </p>
                     <p>
-                        <md-list>
+                        <md-list dense>
                             <h3 md-subheader>Applying operations</h3>
                             <md-list-item *ngFor="let step of gcp.operationSteps" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
 
@@ -107,7 +107,6 @@
                 </ng-template>
             </md-card-actions>
         </md-card>
-        <!-- <md-progress-bar *ngIf="isWorking" color="warn" mode="indeterminate"></md-progress-bar> -->
 
     </app-carousel>
     <app-carousel>
