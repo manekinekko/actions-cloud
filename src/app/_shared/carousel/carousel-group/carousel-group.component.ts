@@ -34,7 +34,7 @@ import {
       width: 3000px;
       overflow: hidden;
       padding: 5px;
-      transition: transform 500ms cubic-bezier(0.250, 0.460, 0.450, 0.940);
+      transition: transform 200ms cubic-bezier(0.250, 0.460, 0.450, 0.940);
     }
     @media (max-width: 600px) {
         :host section {
