@@ -29,6 +29,7 @@
                 <md-card-title>Link your Google account</md-card-title>
                 <md-card-subtitle *ngIf="user">{{ user.displayName }} ({{ user.email }})</md-card-subtitle>
             </md-card-header>
+            <img md-card-image src="https://www.ftrack.com/wp-content/uploads/google-cloud-platform.png">
             <md-card-content>
                 <br>
                 <p>
@@ -38,9 +39,17 @@
                     <li>An API.AI project to model your dialog;</li>
                     <li>A Google Cloud Platform project to deploy the Cloud Function.</li>
                 </ul>
+                <p>
+                    This application will ask for these permissions (scopes):
+                </p>
+                <ul>
+                    <li>https://www.googleapis.com/auth/cloud-platform.</li>
+                    <li>https://www.googleapis.com/auth/cloudplatformprojects.</li>
+                    <li>https://www.googleapis.com/auth/cloudfunctions.</li>
+                </ul>
             </md-card-content>
             <md-card-actions>
-                <a *ngIf="!user" md-button target="__blank" href="https://cloud.google.com/">CREATE AN ACCOUNT</a>
+                <a *ngIf="!user" md-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>
                 <button *ngIf="!user; else connectedRef" color="primary" md-raised-button (click)="login()">LOGIN</button>
                 <ng-template #connectedRef>
                     <button color="warn" md-raised-button (click)="logout()">UNLINK</button>
@@ -65,55 +74,24 @@
                 <form #form="ngForm">
                     <p>
                         <md-input-container>
-                            <input [disabled]="createdPorjectOperation.done" [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Your bot name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
+                            <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Enter your project name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
                             <md-hint>Must be 6-30 lowercase letters, digits or hyphens, start with a letter and have no trailing hyphen.</md-hint>
                         </md-input-container>
                     </p>
                     <p>
                         <md-list>
                             <h3 md-subheader>Applying operations</h3>
-                            <md-list-item>
+                            <md-list-item *ngFor="let step of gcp.operationSteps" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
 
-                                <md-icon md-list-icon *ngIf="false">done</md-icon>
-                                <div md-list-icon *ngIf="true">
-                                    <md-progress-spinner color="primary" mode="indeterminate">
-                                    </md-progress-spinner>
+                                <div md-list-icon>
+                                    <md-icon md-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</md-icon>
+                                    <md-icon md-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</md-icon>
+                                    <div md-list-icon *ngIf="step.isWorking === true">
+                                        <md-progress-spinner color="primary" mode="indeterminate"></md-progress-spinner>
+                                    </div>
                                 </div>
 
-                                <h4 md-line>Creating project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
-                            </md-list-item>
-
-                            <md-list-item>
-
-                                <md-icon md-list-icon *ngIf="false">done</md-icon>
-                                <div md-list-icon *ngIf="true">
-                                    <md-progress-spinner color="primary" mode="indeterminate">
-                                    </md-progress-spinner>
-                                </div>
-
-                                <h4 md-line>Checking project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
-                            </md-list-item>
-
-                            <md-list-item>
-
-                                <md-icon md-list-icon *ngIf="false">done</md-icon>
-                                <div md-list-icon *ngIf="true">
-                                    <md-progress-spinner color="primary" mode="indeterminate">
-                                    </md-progress-spinner>
-                                </div>
-
-                                <h4 md-line>Checking billing permissions for project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
-                            </md-list-item>
-
-                            <md-list-item>
-
-                                <md-icon md-list-icon *ngIf="false">done</md-icon>
-                                <div md-list-icon *ngIf="true">
-                                    <md-progress-spinner color="primary" mode="indeterminate">
-                                    </md-progress-spinner>
-                                </div>
-
-                                <h4 md-line>Creating cloud function "agent" for project {{projectName ? '"'+projectName+'"' : ''}} ...</h4>
+                                <p md-line>{{ step.description }} <span class="error-message" md-line [title]="step.error" *ngIf="!!step.error">[{{ step.error }}]</span> </p>
                             </md-list-item>
 
                         </md-list>
@@ -123,13 +101,13 @@
             </md-card-content>
             <md-card-actions>
                 <span class="error-message" *ngIf="error?.message">{{ error?.message }}</span>
-                <button *ngIf="createdPorjectOperation.done === null; else projectCreatedDoneRef" color="primary" md-raised-button [disabled]="form.invalid" (click)="create()">CREATE</button>
+                <button *ngIf="gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" md-raised-button (click)="next(3)">NEXT</button>
                 <ng-template #projectCreatedDoneRef>
-                    <button color="primary" md-raised-button (click)="next(3)">NEXT</button>
+                    <button color="primary" md-raised-button [disabled]="form.invalid" (click)="create()">CREATE</button>
                 </ng-template>
             </md-card-actions>
         </md-card>
-        <md-progress-bar *ngIf="isWorking" color="warn" mode="indeterminate"></md-progress-bar>
+        <!-- <md-progress-bar *ngIf="isWorking" color="warn" mode="indeterminate"></md-progress-bar> -->
 
     </app-carousel>
     <app-carousel>

@@ -1,25 +1,99 @@
 import { Injectable } from "@angular/core";
 import { Subject } from "rxjs/Subject";
+import { MdSnackBar } from "@angular/material";
 
 export enum OperationType {
-  CreatingProject,
-  CheckingProjectCreation
+  CreatingProject = 0,
+  CheckingProjectCreation = 1,
+  CheckingBilling = 2,
+  CheckingPermissions = 3,
+  CreatingCloudFunction = 4,
+  CheckingCloudFunction = 5,
+  UploadingProjectTemplate = 6
+}
+
+export interface Step {
+  isValid: boolean;
+  isDirty: boolean;
+  isWorking: boolean;
+  description: string;
+  error?: string;
 }
 
 @Injectable()
 export class GcpService {
-  operations: Subject<{ error?: any; id: OperationType; isWorking: boolean }>;
+  // operations: Subject<{ error?: any; id: OperationType; isWorking: boolean }>;
+  operationSteps: Step[];
 
   accessToken: {
     google: string;
   };
 
-  constructor() {
+  constructor(public snackBar: MdSnackBar) {
     this.accessToken = {
       google: null
     };
 
-    this.operations = new Subject();
+    this.operationSteps = [
+      // CreatingProject
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Creating project...`
+      },
+      // CheckingProjectCreation
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Checking project...`
+      },
+      // CheckingBilling
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Checking billing...`
+      },
+      // CheckingPermissions
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Checking permissions...`
+      },
+      // CreatingCloudFunction
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Creating cloud function "agent"...`
+      },
+      // CheckingCloudFunction
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Checking cloud function...`
+      },
+      // UploadingProjectTemplate
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Uploading project template...`
+      }
+    ];
+
+    // this.operations = new Subject();
   }
 
   restoreToken() {
@@ -34,39 +108,31 @@ export class GcpService {
   }
 
   setToken(loginInfo) {
-    this.accessToken.google = loginInfo.credential.accessToken;
+    this.accessToken.google = loginInfo
+      ? loginInfo.credential.accessToken
+      : null;
     localStorage.setItem("accessToken.google", this.accessToken.google);
   }
 
   async createProjects(projectName) {
     if (this.accessToken.google) {
+      const createdPorject = await this.createCloudProject(projectName);
+      const checkedProject = !createdPorject.error && await this.checkProjectCreation(createdPorject);
+      console.log(checkedProject);
       
-      this.notify(OperationType.CreatingProject, true);
-      const createdPorject = await this.createCloudFunction(projectName);
-      
-      if (createdPorject.error) {
-        // error
+      // const createdCloudFunction = await this.createCloudFunction(projectName);
 
-        this.notify(OperationType.CreatingProject, false, createdPorject.error);
-
-      } else if (createdPorject.name) {
-        // success
-        
-        this.notify(OperationType.CheckingProjectCreation, true);
-        await this.checkProjectCreation(createdPorject);
-        this.notify(OperationType.CheckingProjectCreation, true);
-
-      }
     } else {
       console.warn("Google Access Token is not set", this.accessToken.google);
     }
-
 
     return Promise.resolve(true);
   }
 
   async createCloudProject(projectName) {
-    return  await this.fetch(
+    this.notify(OperationType.CreatingProject, true, false);
+
+    const createdPorject = await this.fetch(
       "https://cloudresourcemanager.googleapis.com/v1/projects",
       {
         method: "POST",
@@ -79,26 +145,64 @@ export class GcpService {
         }
       }
     );
+
+    if (createdPorject.error) {
+      // error
+
+      this.notify(
+        OperationType.CreatingProject,
+        false,
+        false,
+        createdPorject.error
+      );
+      
+    } else if (createdPorject.name) {
+      // success
+
+      this.notify(OperationType.CreatingProject, false, true);
+    }
+
+    return createdPorject;
   }
 
   //@todo
   async checkProjectCreation(createdPorject) {
-
-    const result = {};
     
-    setTimeout(async function() {
-      this.createdPorjectOperation = await this.fetch(
-        `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
-      );
-      this.createdPorjectOperation.error;
+    return new Promise( (resolve, reject) => {
 
-      const r = await this.createCloudFunction(this.projectName);
-      console.log(r);
-    }, 6000);
+      this.notify(OperationType.CheckingProjectCreation, true, false);
 
-    return result;
+      let timer = null;
+      let response = null;
+
+      timer = setInterval( async (_) => {
+        try {
+          response = await this.fetch(
+            `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
+          );
+
+          if (response.error) {
+            this.notify(OperationType.CheckingProjectCreation, false, false, response.error);
+            clearInterval(timer);
+            resolve(response);
+          }
+          else if (response.name) {
+            this.notify(OperationType.CheckingProjectCreation, true, true);
+            clearInterval(timer);
+            resolve(response);
+          }
+        }
+        catch(e){
+            clearInterval(timer);
+            reject(e);
+        }
+
+      }, 1000);
+
+    });
   }
 
+  //@todo
   async createCloudFunction(projectId) {
     const locationId = `projects/${projectId}/locations/us-central1`;
     return await this.fetch(
@@ -121,12 +225,37 @@ export class GcpService {
     );
   }
 
-  notify(id: OperationType, isWorking: boolean, error: string = null) {
-    this.operations.next({
-      error,
-      id,
-      isWorking
-    });
+  notify(
+    id: OperationType,
+    isWorking: boolean,
+    isValid: boolean,
+    error: any = null
+  ) {
+
+    let snackBar = null;
+    this.operationSteps[id].isDirty = true;
+    this.operationSteps[id].isWorking = isWorking;
+    this.operationSteps[id].isValid = isValid;
+
+    if (error) {
+      const errorMsg = `[${error.status}] ${error.message}`;
+      this.operationSteps[id].error = error.status;
+
+      snackBar = this.snackBar.open(error.message, "CLOSE", {
+        duration: 0
+      });
+    }
+    else {
+      this.operationSteps[id].error = '';
+
+      if (snackBar){
+        snackBar.dismiss();
+      }
+    }
+  }
+
+  isAllOperationsOK() {
+    return this.operationSteps.every(s => s.isValid === true);
   }
 
   async fetch(url, opts = {} as any) {

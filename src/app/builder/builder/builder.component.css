@@ -35,9 +35,13 @@ md-input-container {
     width: 100%;
 }
 
-.error-message {
+md-icon[md-list-icon] {
+    color: green;
+}
+
+span.error-message,
+md-icon[md-list-icon].error-message {
     color: #F44336;
-    font-weight: bold;
 }
 
 md-progress-spinner {
@@ -45,6 +49,19 @@ md-progress-spinner {
     height: 24px;
 }
 
-md-icon[md-list-icon] {
-    color: green;
+md-list-item.mat-list-item {
+    color: lightgray;
+}
+
+md-list-item.mat-list-item.isWorking {
+    font-weight: bold;
+    color: black;
+}
+
+md-list-item.mat-list-item.isDirty {
+    color: black;
+}
+
+:host .mat-list span {
+    display: inline;
 }

@@ -14,10 +14,11 @@ export class BuilderComponent {
   showDots: boolean;
   selectedCarousel: number;
   projectName: string;
+  
   error: {
     message: string;
   };
-  createdPorjectOperation: {
+  createdProjectOperation: {
     done: boolean;
     error?: any;
   };
@@ -27,29 +28,17 @@ export class BuilderComponent {
     public afAuth: AngularFireAuth,
     public gcp: GcpService
   ) {
-    this.error = {
-      message: ""
-    };
-    this.createdPorjectOperation = {
+    this.error = { message: "" };
+    this.createdProjectOperation = {
       done: null /* must be null for the initial state (see md-progress-bar) */
     };
     this.isWorking = false;
-
+    this.projectName = '';
     afAuth.authState.subscribe(user => {
       this.user = user;
       console.log(user);
 
       if (user) {
-        const storedIndex = parseInt(
-          localStorage.getItem("ui.selectedCarousel"),
-          10
-        );
-        if (storedIndex) {
-          this.next(storedIndex);
-          this.showDots = true;
-        } else {
-          this.start();
-        }
       } else {
         this.welcomeScreen();
       }
@@ -58,23 +47,21 @@ export class BuilderComponent {
 
   ngOnInit() {
     this.gcp.restoreToken();
-
-    this.gcp.operations.subscribe(op => {
-
-      if (op.error) {
-        this.error.message = op.error;
-      }
-
-      this.isWorking = op.isWorking;
-
-    });
+    const storedIndex = parseInt(
+      localStorage.getItem("ui.selectedCarousel"),
+      10
+    );
+    if (storedIndex) {
+      this.next(storedIndex);
+      this.showDots = true;
+    }
   }
 
   welcomeScreen() {
     this.showDots = false;
-    this.next(0);
     this.projectName = "";
     this.gcp.resetToken();
+    this.next(0);
   }
 
   start() {
