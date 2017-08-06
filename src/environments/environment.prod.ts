@@ -7,5 +7,13 @@ export const environment = {
     projectId: "project-2966895523221308821",
     storageBucket: "project-2966895523221308821.appspot.com",
     messagingSenderId: "571506926720"
-  }
+  },
+  scopes: [
+    "https://www.googleapis.com/auth/cloud-platform",
+    "https://www.googleapis.com/auth/cloudplatformprojects",
+    "https://www.googleapis.com/auth/cloudfunctions",
+    "https://www.googleapis.com/auth/cloud-billing",
+    "https://www.googleapis.com/auth/iam",
+    "https://www.googleapis.com/auth/service.management"
+  ]
 };

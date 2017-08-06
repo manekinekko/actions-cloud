@@ -43,9 +43,7 @@
                     This application will ask for these permissions (scopes):
                 </p>
                 <ul>
-                    <li>https://www.googleapis.com/auth/cloud-platform.</li>
-                    <li>https://www.googleapis.com/auth/cloudplatformprojects.</li>
-                    <li>https://www.googleapis.com/auth/cloudfunctions.</li>
+                    <li *ngFor="let scope of scopes">{{ scope }}</li>
                 </ul>
             </md-card-content>
             <md-card-actions>
