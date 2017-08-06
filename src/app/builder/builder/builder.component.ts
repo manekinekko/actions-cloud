@@ -28,8 +28,6 @@ export class BuilderComponent {
 
     afAuth.authState.subscribe(user => {
       this.user = user;
-      console.log(user);
-
       if (user) {
       } else {
         this.welcomeScreen();
