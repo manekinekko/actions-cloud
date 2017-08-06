@@ -72,7 +72,8 @@
                 <form #form="ngForm">
                     <p>
                         <md-input-container>
-                            <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectName" name="project-name" type="text" mdInput placeholder="Enter your project name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
+                            <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" type="text" mdInput placeholder="Enter your project name" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
+                            <md-icon (click)="randomProjectId()" mdSuffix style="cursor: pointer;">autorenew</md-icon>
                             <md-hint>Must be 6-30 lowercase letters, digits or hyphens, start with a letter and have no trailing hyphen.</md-hint>
                         </md-input-container>
                     </p>

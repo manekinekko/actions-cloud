@@ -5,6 +5,8 @@ import { Observable } from "rxjs/Observable";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
 
+import * as generate from 'project-name-generator';
+
 @Component({
   selector: "app-builder",
   templateUrl: "./builder.component.html",
@@ -14,7 +16,7 @@ export class BuilderComponent {
   user: firebase.User;
   showDots: boolean;
   selectedCarousel: number;
-  projectName: string;
+  projectId: string;
   scopes: string[];
 
   constructor(
@@ -36,7 +38,7 @@ export class BuilderComponent {
   }
 
   ngOnInit() {
-    this.projectName = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
+    this.projectId = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
     this.gcp.restoreToken();
     this.gcp.onSessionExpired.subscribe( async(_) => {
       await this.logout();
@@ -52,9 +54,13 @@ export class BuilderComponent {
     }
   }
 
+  randomProjectId() {
+    this.projectId = generate({ words: 3, number: true }).dashed;
+  }
+
   welcomeScreen() {
     this.showDots = false;
-    this.projectName = "";
+    this.projectId = "";
     this.gcp.resetToken();
     this.next(0);
   }
@@ -70,7 +76,7 @@ export class BuilderComponent {
   }
 
   async create() {
-    const operation = await this.gcp.createProjects(this.projectName);
+    const operation = await this.gcp.createProjects(this.projectId);
   }
 
   async login() {
