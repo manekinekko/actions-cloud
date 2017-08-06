@@ -1,7 +1,9 @@
-import { ProjectBillingInfo, BillingAccount } from './gcp.service';
+import { Status, Operation, ProjectBillingInfo } from "./gcp.service";
 import { Injectable } from "@angular/core";
 import { Subject } from "rxjs/Subject";
 import { MdSnackBar } from "@angular/material";
+
+/************* TYPES *************/
 
 export enum OperationType {
   CreatingProject,
@@ -9,9 +11,33 @@ export enum OperationType {
   CheckingBilling,
   EnablingBilling,
   CheckingPermissions,
+  EnablingCloudFunctionService,
   CreatingCloudFunction,
-  CheckingCloudFunction,
-  UploadingProjectTemplate,
+  UploadingProjectTemplate
+}
+
+export enum LifecycleState {
+  LIFECYCLE_STATE_UNSPECIFIED,
+  ACTIVE,
+  DELETE_REQUESTED,
+  DELETE_IN_PROGRESS
+}
+
+export enum CloudFunctionStatus {
+  STATUS_UNSPECIFIED,
+  READY,
+  FAILED,
+  DEPLOYING,
+  DELETING
+}
+
+export enum RoleLaunchStage {
+  ALPHA,
+  BETA,
+  GA,
+  DEPRECATED,
+  DISABLED,
+  EAP
 }
 
 export interface ProjectBillingInfo {
@@ -19,25 +45,121 @@ export interface ProjectBillingInfo {
   projectId?: string;
   billingAccountName?: string;
   billingEnabled?: boolean;
+  error?: Status;
 }
 
 export interface BillingAccount {
-  name: string;
-  open: boolean;
-  displayName: string;
+  name?: string;
+  open?: boolean;
+  displayName?: string;
+}
+
+export interface BillingAccounts {
+  billingAccounts?: Array<BillingAccount>;
+  error?: Status;
+}
+
+export interface Operation {
+  name?: string;
+  metadata?: {
+    "@type"?: string;
+  };
+  done?: boolean;
+  error?: Status;
+  response?: {
+    "@type"?: string;
+  };
+}
+
+export interface Status {
+  code?: number;
+  status?: string;
+  message?: string;
+  details?: Array<{
+    "@type": string;
+    [name: string]: string;
+  }>;
+}
+
+export interface Project {
+  projectNumber?: string;
+  projectId?: string;
+  lifecycleState?: LifecycleState;
+  name?: string;
+  createTime?: string;
+  labels?: {
+    [name: string]: string;
+  };
+  parent?: ResourceId;
+}
+
+export interface ResourceId {
+  type?: string;
+  id?: string;
 }
 
 export interface Step {
-  isValid: boolean;
-  isDirty: boolean;
-  isWorking: boolean;
-  description: string;
+  isValid?: boolean;
+  isDirty?: boolean;
+  isWorking?: boolean;
+  description?: string;
   error?: string;
 }
 
+export interface CloudFunction {
+  name?: string;
+  status?: CloudFunctionStatus;
+  latestOperation?: string;
+  entryPoint?: string;
+  timeout?: string;
+  availableMemoryMb?: number;
+  serviceAccount?: string;
+  updateTime?: string;
+  sourceArchiveUrl?: string;
+  sourceRepository?: SourceRepository;
+  httpsTrigger?: HTTPSTrigger;
+  eventTrigger?: EventTrigger;
+}
+
+export interface HTTPSTrigger {
+  url: string;
+}
+
+export interface EventTrigger {
+  eventType?: string;
+  resource?: string;
+}
+
+export interface SourceRepository {
+  repositoryUrl?: string;
+  sourcePath?: string;
+  deployedRevision?: string;
+  branch?: string;
+  tag?: string;
+  revision?: string;
+}
+
+export interface Role {
+  name?: string;
+  title?: string;
+  description?: string;
+  includedPermissions?: string[];
+  stage?: RoleLaunchStage;
+  etag?: string;
+  deleted?: boolean;
+  error?: Status;
+}
+
+export interface RoleRequest {
+  roleId?: string;
+  role?: Role;
+}
+
+/************* TYPES *************/
+
 @Injectable()
 export class GcpService {
-  operations: Subject<Step[]>;
+  onSessionExpired: Subject<boolean>;
   operationSteps: Step[];
 
   accessToken: {
@@ -49,11 +171,14 @@ export class GcpService {
       google: null
     };
 
-    this.operations = new Subject();
+    this.onSessionExpired = new Subject();
     this.resetOperations();
-    
+
     //@todo remove this
-    this.__skipSteps(0, 1);
+    this.__skipSteps(
+      OperationType.CreatingProject,
+      OperationType.EnablingCloudFunctionService
+    );
   }
 
   resetOperations() {
@@ -98,21 +223,21 @@ export class GcpService {
         error: "",
         description: `Checking permissions...`
       },
+      // EnablingCloudFunctionService
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Enabling Cloud Function service...`
+      },
       // CreatingCloudFunction
       {
         isValid: false,
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Creating cloud function "agent"...`
-      },
-      // CheckingCloudFunction
-      {
-        isValid: false,
-        isDirty: false,
-        isWorking: false,
-        error: "",
-        description: `Checking cloud function...`
+        description: `Creating Cloud Function "agent"...`
       },
       // UploadingProjectTemplate
       {
@@ -125,18 +250,17 @@ export class GcpService {
     ];
   }
 
-  __skipSteps(from, to=null) {
+  __skipSteps(from, to = null) {
     if (!to) {
       to = from;
     }
-    this.operationSteps
-      .map((step, key) => {
-        if (key >= from && key <= to) {
-          step.isDirty = true;
-          step.isValid = true;
-        }
-        return step;
-      });
+    this.operationSteps.map((step, key) => {
+      if (key >= from && key <= to) {
+        step.isDirty = true;
+        step.isValid = true;
+      }
+      return step;
+    });
   }
 
   restoreToken() {
@@ -157,33 +281,147 @@ export class GcpService {
     localStorage.setItem("accessToken.google", this.accessToken.google);
   }
 
+  guard(operation: Operation): boolean {
+    const predicate = operation && !operation.error;
+
+    console.log("[GUARD]", operation);
+
+    return predicate;
+  }
+
+  /**
+   * Start the creating process of the new project
+   * 
+   * @param projectId the project ID to create on the GCP
+   */
   async createProjects(projectId: string) {
     if (this.accessToken.google) {
-
-      let createdPorject = {
+      //** just for initialization purpose!
+      let createdPorject: Operation = {
         name: projectId
-      } as any;
+      };
 
-      let checkedProject = {
+      let checkedProject: Operation = {
         response: {}
-      } as any;
+      };
 
-      // should we skip step 0?
-      if (!this.operationSteps[0].isValid) {
+      let billingAccount: ProjectBillingInfo = {};
+
+      let projectBillingInfo: ProjectBillingInfo = {};
+
+      let role: Role = {};
+
+      let cloudFunctionServiceOperation: Operation = {};
+      let cloudFunctionOperation: Operation = {};
+      //**//
+
+      // should we skip this step?
+      if (this.operationSteps[OperationType.CreatingProject].isValid) {
+        this.notify(
+          OperationType.CreatingProject,
+          false,
+          true,
+          null,
+          `Project "${projectId}" created.`
+        );
+      } else {
         createdPorject = await this.createCloudProject(projectId);
       }
-      
-      // should we skip step 1?
-      if (!this.operationSteps[1].isValid) {
-        checkedProject = !createdPorject.error && await this.checkProjectAvailability(createdPorject);
+
+      // should we skip this step?
+      if (
+        this.operationSteps[OperationType.CheckingProjectAvailability].isValid
+      ) {
+        this.notify(
+          OperationType.CheckingProjectAvailability,
+          false,
+          true,
+          null,
+          `Project "${createdPorject.name}" is ready.`
+        );
+      } else {
+        checkedProject =
+          this.guard(createdPorject) &&
+          (await this.checkProjectAvailability(createdPorject));
       }
 
-      const billingAccount = await this.checkBilling();
-      const projectBillingInfo = this.enablingBillingInfo(projectId, billingAccount);
-      console.log(billingAccount, projectBillingInfo);
-      
-      // const createdCloudFunction = await this.createCloudFunction(projectId);
+      // should we skip this step?
+      if (this.operationSteps[OperationType.CheckingBilling].isValid) {
+        this.notify(
+          OperationType.CheckingBilling,
+          false,
+          true,
+          null,
+          `Found Billing account.`
+        );
+      } else {
+        billingAccount =
+          this.guard(checkedProject) && (await this.checkBilling());
+      }
 
+      // should we skip this step?
+      if (this.operationSteps[OperationType.EnablingBilling].isValid) {
+        this.notify(
+          OperationType.EnablingBilling,
+          false,
+          true,
+          null,
+          `Enabled Billing for "${projectId}".`
+        );
+      } else {
+        projectBillingInfo =
+          this.guard(billingAccount) &&
+          (await this.enablingBillingInfo(projectId, billingAccount));
+      }
+
+      // should we skip this step?
+      if (this.operationSteps[OperationType.CheckingPermissions].isValid) {
+        this.notify(
+          OperationType.CheckingPermissions,
+          false,
+          true,
+          null,
+          `Permissions set for "${projectId}".`
+        );
+      } else {
+        role =
+          this.guard(projectBillingInfo) &&
+          (await this.checkCloudFunctionPermissions(projectId));
+      }
+
+      // should we skip this step?
+      if (
+        this.operationSteps[OperationType.EnablingCloudFunctionService].isValid
+      ) {
+        this.notify(
+          OperationType.CheckingPermissions,
+          false,
+          true,
+          null,
+          `Enabled Cloud Function service for "${projectId}".`
+        );
+      } else {
+        cloudFunctionServiceOperation =
+          this.guard(role) &&
+          (await this.enableCloudFunctionService(projectId));
+      }
+
+      // should we skip this step?
+      if (this.operationSteps[OperationType.CreatingCloudFunction].isValid) {
+        this.notify(
+          OperationType.CheckingPermissions,
+          false,
+          true,
+          null,
+          `Created Cloud Function for "${projectId}".`
+        );
+      } else {
+        cloudFunctionOperation =
+          this.guard(cloudFunctionServiceOperation) &&
+          (await this.createCloudFunction(projectId));
+      }
+
+      console.log(cloudFunctionOperation);
     } else {
       console.warn("Google Access Token is not set", this.accessToken.google);
     }
@@ -191,10 +429,15 @@ export class GcpService {
     return Promise.resolve(true);
   }
 
-  async createCloudProject(projectId) {
+  /**
+   * Request the creation of a GCP project.
+   * 
+   * @param projectId the project ID to create on the GCP
+   */
+  async createCloudProject(projectId: string) {
     this.notify(OperationType.CreatingProject, true, false);
 
-    const createdPorject = await this.fetch(
+    const createdPorject: Operation = await this.fetch(
       "https://cloudresourcemanager.googleapis.com/v1/projects",
       {
         method: "POST",
@@ -204,7 +447,7 @@ export class GcpService {
           labels: {
             mylabel: projectId
           }
-        }
+        } as Project
       }
     );
 
@@ -217,134 +460,362 @@ export class GcpService {
         false,
         createdPorject.error
       );
-      
     } else if (createdPorject.name) {
       // success
 
-      this.notify(OperationType.CreatingProject, false, true, null, `Project "${projectId}" created.`);
+      this.notify(
+        OperationType.CreatingProject,
+        false,
+        true,
+        null,
+        `Project "${projectId}" created.`
+      );
     }
 
     return createdPorject;
   }
 
-  async checkProjectAvailability(createdPorject) {
-    
-    return new Promise( (resolve, reject) => {
-
+  /**
+   * Check if the created project is available. Starts polling (1 second) and exits when the project is ready.
+   * 
+   * @param createdPorject The operation info received after starting created a new GCP project
+   */
+  async checkProjectAvailability(createdPorject: Operation) {
+    return new Promise((resolve, reject) => {
       this.notify(OperationType.CheckingProjectAvailability, true, false);
 
       let timer = null;
       let projectAvailability = null;
 
-      timer = setInterval( async (_) => {
-        
+      timer = setInterval(async _ => {
         try {
           projectAvailability = await this.fetch(
             `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
           );
           console.log(projectAvailability);
-          
 
           if (projectAvailability.error) {
-            this.notify(OperationType.CheckingProjectAvailability, false, false, projectAvailability.error);
+            this.notify(
+              OperationType.CheckingProjectAvailability,
+              false,
+              false,
+              projectAvailability.error
+            );
+            clearInterval(timer);
+            resolve(projectAvailability);
+          } else if (projectAvailability.response) {
+            this.notify(
+              OperationType.CheckingProjectAvailability,
+              false,
+              true,
+              null,
+              `Project "${createdPorject.name}" is ready.`
+            );
             clearInterval(timer);
             resolve(projectAvailability);
           }
-          else if (projectAvailability.response) {
-            this.notify(OperationType.CheckingProjectAvailability, false, true, null, `Project "${createdPorject.name} is ready."`);
-            clearInterval(timer);
-            resolve(projectAvailability);
-          }
-
+        } catch (e) {
+          clearInterval(timer);
+          reject(e);
         }
-        catch(e){
-            clearInterval(timer);
-            reject(e);
-        }
-
       }, 1000);
-
     });
   }
 
+  /**
+   * Retrieve the user's billing account information.
+   */
   async checkBilling(): Promise<ProjectBillingInfo> {
-
     this.notify(OperationType.CheckingBilling, true, false);
 
-    const response = await this.fetch(`https://cloudbilling.googleapis.com/v1/billingAccounts`);
-    if (response.billingAccounts && response.billingAccounts.length > 0) {
-      
-      const account = response.billingAccounts[0] as BillingAccount;
+    const billingAccountsResponse: BillingAccounts = await this.fetch(
+      `https://cloudbilling.googleapis.com/v1/billingAccounts`
+    );
+    if (
+      billingAccountsResponse.billingAccounts &&
+      billingAccountsResponse.billingAccounts.length > 0
+    ) {
+      const account = billingAccountsResponse
+        .billingAccounts[0] as BillingAccount;
       if (account) {
-        const info = await this.fetch(`https://cloudbilling.googleapis.com/v1/${account.name}`);
+        const info: BillingAccount = await this.fetch(
+          `https://cloudbilling.googleapis.com/v1/${account.name}`
+        );
         if (info.open) {
-          this.notify(OperationType.CheckingBilling, false, true, null, `Found Billing account "${account.displayName}".`);
+          this.notify(
+            OperationType.CheckingBilling,
+            false,
+            true,
+            null,
+            `Found Billing account "${account.displayName}".`
+          );
           return Promise.resolve(account);
         }
-        
+      } else {
+        console.warn("checkbilling::account is ", account);
       }
-      
-    }
-    else {
-      this.notify(OperationType.CheckingBilling, false, false, {message:'No billing account found. Please create a billing account first and try again.'});
-      console.error('No billing account found. Please create a billing account first and try again.');
+    } else {
+      // error
+
+      this.notify(
+        OperationType.CheckingBilling,
+        false,
+        false,
+        billingAccountsResponse.error
+      );
+      console.error(billingAccountsResponse.error);
     }
 
     return null;
   }
 
-  async enablingBillingInfo(projectId: string, billingAccountName: ProjectBillingInfo): Promise<ProjectBillingInfo> {
+  /**
+   * Enable the billing accound for the given project.
+   * 
+   * @param projectId The project ID to link with `billingAccountName`.
+   * @param billingAccountName The billing account information received from `checkBilling()`.
+   */
+  async enablingBillingInfo(
+    projectId: string,
+    billingAccountName: ProjectBillingInfo
+  ): Promise<ProjectBillingInfo> {
     this.notify(OperationType.EnablingBilling, true, false);
-    
-    const projectBillingInfo: ProjectBillingInfo = await this.fetch(`https://cloudbilling.googleapis.com/v1/projects/${projectId}/billingInfo`, {
-      method: 'PUT',
-      body: {
-        billingAccountName: billingAccountName.name
-      }
-    });
 
-    if (projectBillingInfo.billingEnabled) {
-      this.notify(OperationType.EnablingBilling, false, true, null, `Enabled Billing for "${projectId}".`);
-      return projectBillingInfo;
-    }
-    else {
-      this.notify(OperationType.EnablingBilling, false, false, `Could not enable billing for "${projectId}".`);
-      return null;
-    }
-
-  }
-
-  //@todo
-  async createCloudFunction(projectId) {
-    const locationId = `projects/${projectId}/locations/us-central1`;
-    return await this.fetch(
-      `https://cloudfunctions.googleapis.com/v1beta2/${locationId}/functions`,
+    const projectBillingInfo: ProjectBillingInfo = await this.fetch(
+      `https://cloudbilling.googleapis.com/v1/projects/${projectId}/billingInfo`,
       {
-        method: "POST",
+        method: "PUT",
         body: {
-          name: `${locationId}/functions/agent`,
-          entryPoint: "agent",
-          timeout: "60s",
-          availableMemoryMb: 256,
-          sourceRepository: {
-            repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
-            sourcePath: "/",
-            branch: "master"
-          },
-          httpsTrigger: {}
+          billingAccountName: billingAccountName.name
         }
       }
     );
+
+    if (projectBillingInfo.billingEnabled) {
+      this.notify(
+        OperationType.EnablingBilling,
+        false,
+        true,
+        null,
+        `Enabled Billing for "${projectId}".`
+      );
+      return projectBillingInfo;
+    } else {
+      this.notify(OperationType.EnablingBilling, false, false, {
+        message: `Could not enable billing for "${projectId}".`
+      });
+      return null;
+    }
+  }
+
+  async checkCloudFunctionPermissions(projectId: string): Promise<Role> {
+    this.notify(OperationType.CheckingPermissions, true, false);
+
+    const roleInfo: Role = await this.fetch(
+      `https://iam.googleapis.com/v1/projects/${projectId}/roles`,
+      {
+        method: "POST",
+        body: {
+          roleId: "cloudfunctions.functions.create"
+        } as RoleRequest
+      }
+    );
+
+    if (roleInfo.etag) {
+      // exemple:
+      // roleInfo.name: "projects/aaaaaazzzzzzzzzzzzeeeeeeeee/roles/cloudfunctions.functions.create"
+      // roleInfo.etag: BwVWCkmWyrY=
+      this.notify(
+        OperationType.CheckingPermissions,
+        false,
+        true,
+        null,
+        `Permissions set for "${projectId}".`
+      );
+    } else {
+      // error
+
+      this.notify(
+        OperationType.CheckingPermissions,
+        false,
+        false,
+        roleInfo.error
+      );
+    }
+
+    return roleInfo;
+  }
+
+  /**
+   * @notUsed
+   */
+  async undeleteRole(projectId: string): Promise<Role> {
+    this.notify(OperationType.CheckingPermissions, true, false);
+
+    const role = "cloudfunctions.functions.create";
+    const etag = "BwVWCkmWyrY=";
+
+    const roleInfo: Role = await this.fetch(
+      `https://iam.googleapis.com/v1/projects/${projectId}/roles/${role}:undelete`,
+      {
+        method: "POST",
+        body: {
+          etag
+        }
+      }
+    );
+
+    return roleInfo;
+  }
+
+  /**
+   * Enable the Cloud Function service (using Google Service Management).
+   * 
+   * @param projectId The project ID to link to this Cloud Function.
+   */
+  async enableCloudFunctionService(projectId) {
+    return new Promise(async (resolve, reject) => {
+      this.notify(OperationType.EnablingCloudFunctionService, true, false);
+
+      const enableOperation: Operation = await this.fetch(
+        `https://servicemanagement.googleapis.com/v1/services/cloudfunctions.googleapis.com:enable`,
+        {
+          method: "POST",
+          body: {
+            consumerId: `project:${projectId}`
+          }
+        }
+      );
+
+      let response;
+      let timer = null;
+      timer = setInterval(async _ => {
+        response = await this.fetch(
+          `https://servicemanagement.googleapis.com/v1/${enableOperation.name}`
+        );
+
+        if (response.done) {
+          clearInterval(timer);
+          this.notify(
+            OperationType.EnablingCloudFunctionService,
+            false,
+            true,
+            null,
+            `Enabled Cloud Function service for "${projectId}".`
+          );
+          resolve(response);
+        } else if (response.error) {
+          clearInterval(timer);
+          this.notify(
+            OperationType.EnablingCloudFunctionService,
+            false,
+            false,
+            response.error
+          );
+          resolve(response);
+        }
+      }, 1000);
+    });
+  }
+
+  /**
+   * Create a new Clouf Function for the given project ID.
+   * 
+   * @param projectId The project ID to link with the new Cloud Function.
+   */
+  async createCloudFunction(projectId) {
+    return new Promise(async (resolve, reject) => {
+      this.notify(OperationType.CreatingCloudFunction, true, false);
+
+      const locationId = `projects/${projectId}/locations/us-central1`;
+      const entryPoint = "agent";
+
+      const operation: Operation = await this.fetch(
+        `https://cloudfunctions.googleapis.com/v1beta2/${locationId}/functions`,
+        {
+          method: "POST",
+          body: {
+            name: `${locationId}/functions/${entryPoint}`,
+            entryPoint,
+            timeout: "60s",
+            availableMemoryMb: 256,
+            sourceRepository: {
+              repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
+              sourcePath: "/",
+              branch: "master"
+            } as SourceRepository,
+            httpsTrigger: {}
+          } as CloudFunction
+        }
+      );
+
+      if (operation.error) {
+        this.notify(
+          OperationType.CreatingCloudFunction,
+          false,
+          false,
+          operation.error
+        );
+        resolve(operation);
+      } else {
+        // checking operation status
+
+        let response;
+        const stop = this.poll(async timer => {
+          response = await this.fetch(
+            `https://cloudfunctions.googleapis.com/v1beta2/${operation.name}`
+          );
+          console.log(response);
+          if (response.error) {
+            // error
+
+            stop(timer);
+            resolve(response);
+            this.notify(
+              OperationType.CreatingCloudFunction,
+              false,
+              false,
+              response.error
+            );
+          } else if (response.done) {
+            // success
+
+            stop(timer);
+            resolve(response);
+            this.notify(
+              OperationType.CreatingCloudFunction,
+              false,
+              false,
+              null,
+              `Creating Cloud Function "${entryPoint}"...`
+            );
+          }
+        });
+      }
+    });
+  }
+
+  poll(callback: Function) {
+    let timer = null;
+    timer = setInterval(arg => {
+      try {
+        callback(timer);
+      } catch (e) {
+        clearInterval(timer);
+      }
+    }, 1000);
+    return timer => {
+      clearInterval(timer);
+    };
   }
 
   notify(
     id: OperationType,
     isWorking: boolean,
     isValid: boolean,
-    error: any = null,
+    error: Status = null,
     description: string = null
   ) {
-
     let snackBar = null;
     this.operationSteps[id].isDirty = true;
     this.operationSteps[id].isWorking = isWorking;
@@ -358,15 +829,30 @@ export class GcpService {
       const errorMsg = `[${error.status}] ${error.message}`;
       this.operationSteps[id].error = error.status;
 
-      snackBar = this.snackBar.open(error.message, "CLOSE", {
-        duration: 0
-      });
-    }
-    else {
-      this.operationSteps[id].error = '';
+      if (
+        error &&
+        error.status &&
+        error.status.indexOf("UNAUTHENTICATED") !== -1
+      ) {
+        // handle the session expired case
 
-      if (snackBar){
-        // snackBar.dismiss();
+        snackBar = this.snackBar.open(
+          "Session expired. You need to link your account again.",
+          "CLOSE",
+          {
+            duration: 0
+          }
+        );
+        this.onSessionExpired.next(true);
+      } else {
+        snackBar = this.snackBar.open(error.message, "CLOSE", {
+          duration: 0
+        });
+      }
+    } else {
+      this.operationSteps[id].error = "";
+
+      if (snackBar) {
         snackBar.afterDismissed().subscribe(() => {
           this.resetOperations();
         });

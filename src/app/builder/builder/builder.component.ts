@@ -1,3 +1,4 @@
+import { environment } from './../../../environments/environment.prod';
 import { GcpService } from './../gcp.service';
 import { Component, OnInit } from "@angular/core";
 import { Observable } from "rxjs/Observable";
@@ -14,26 +15,15 @@ export class BuilderComponent {
   showDots: boolean;
   selectedCarousel: number;
   projectName: string;
-  
-  error: {
-    message: string;
-  };
-  createdProjectOperation: {
-    done: boolean;
-    error?: any;
-  };
-  isWorking: boolean;
+  scopes: string[];
 
   constructor(
     public afAuth: AngularFireAuth,
     public gcp: GcpService
   ) {
-    this.error = { message: "" };
-    this.createdProjectOperation = {
-      done: null /* must be null for the initial state (see md-progress-bar) */
-    };
-    this.isWorking = false;
-    this.projectName = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
+    
+    this.scopes = environment.scopes;
+
     afAuth.authState.subscribe(user => {
       this.user = user;
       console.log(user);
@@ -46,7 +36,12 @@ export class BuilderComponent {
   }
 
   ngOnInit() {
+    this.projectName = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
     this.gcp.restoreToken();
+    this.gcp.onSessionExpired.subscribe( async(_) => {
+      await this.logout();
+      this.next(1);
+    });
     const storedIndex = parseInt(
       localStorage.getItem("ui.selectedCarousel"),
       10
@@ -75,17 +70,12 @@ export class BuilderComponent {
   }
 
   async create() {
-    this.isWorking = true;
-
-    const operation = await this.gcp.createProjects(this.projectName) as any;
+    const operation = await this.gcp.createProjects(this.projectName);
   }
 
   async login() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope("https://www.googleapis.com/auth/cloud-platform");
-    provider.addScope("https://www.googleapis.com/auth/cloudplatformprojects");
-    provider.addScope("https://www.googleapis.com/auth/cloudfunctions");
-    provider.addScope("https://www.googleapis.com/auth/cloud-billing");
+    this.scopes.forEach(scope => provider.addScope(scope));
     const loginInfo = await this.afAuth.auth.signInWithPopup(provider);
     this.gcp.setToken(loginInfo);
   }
