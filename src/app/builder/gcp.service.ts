@@ -10,6 +10,7 @@ export enum OperationType {
   CheckingProjectAvailability,
   CheckingBilling,
   EnablingBilling,
+  CreatingCloudRepository,
   CheckingPermissions,
   EnablingCloudFunctionService,
   CreatingCloudFunction,
@@ -57,6 +58,20 @@ export interface BillingAccount {
 export interface BillingAccounts {
   billingAccounts?: Array<BillingAccount>;
   error?: Status;
+}
+
+export interface Repo {
+  name?: string;
+  size?: string;
+  url?: string;
+  mirrorConfig?: MirrorConfig;
+  error?: Status;
+}
+
+export interface MirrorConfig {
+  url?: string;
+  webhookId?: string;
+  deployKeyId?: string;
 }
 
 export interface Operation {
@@ -177,7 +192,7 @@ export class GcpService {
     //@todo remove this
     this.__skipSteps(
       OperationType.CreatingProject,
-      OperationType.EnablingCloudFunctionService
+      OperationType.EnablingBilling
     );
   }
 
@@ -214,6 +229,14 @@ export class GcpService {
         isWorking: false,
         error: "",
         description: `Enabling billing...`
+      },
+      // CreatingCloudRepository
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Creating Cloud Repository...`
       },
       // CheckingPermissions
       {
@@ -297,20 +320,12 @@ export class GcpService {
   async createProjects(projectId: string) {
     if (this.accessToken.google) {
       //** just for initialization purpose!
-      let createdPorject: Operation = {
-        name: projectId
-      };
-
-      let checkedProject: Operation = {
-        response: {}
-      };
-
+      let createdPorject: Operation = { name: projectId };
+      let checkedProject: Operation = { response: {} };
       let billingAccount: ProjectBillingInfo = {};
-
+      let repoInfo: Repo = {};
       let projectBillingInfo: ProjectBillingInfo = {};
-
       let role: Role = {};
-
       let cloudFunctionServiceOperation: Operation = {};
       let cloudFunctionOperation: Operation = {};
       //**//
@@ -375,6 +390,21 @@ export class GcpService {
       }
 
       // should we skip this step?
+      if (this.operationSteps[OperationType.CreatingCloudRepository].isValid) {
+        this.notify(
+          OperationType.CreatingCloudRepository,
+          false,
+          true,
+          null,
+          `Created Cloud Repository for "${projectId}".`
+        );
+      } else {
+        repoInfo =
+          this.guard(projectBillingInfo) &&
+          (await this.createCloudRepository(projectId));
+      }
+
+      // should we skip this step?
       if (this.operationSteps[OperationType.CheckingPermissions].isValid) {
         this.notify(
           OperationType.CheckingPermissions,
@@ -385,7 +415,7 @@ export class GcpService {
         );
       } else {
         role =
-          this.guard(projectBillingInfo) &&
+          this.guard(repoInfo) &&
           (await this.checkCloudFunctionPermissions(projectId));
       }
 
@@ -484,10 +514,8 @@ export class GcpService {
     return new Promise((resolve, reject) => {
       this.notify(OperationType.CheckingProjectAvailability, true, false);
 
-      let timer = null;
       let projectAvailability = null;
-
-      timer = setInterval(async _ => {
+      const stop = this.poll(async timer => {
         try {
           projectAvailability = await this.fetch(
             `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
@@ -501,7 +529,7 @@ export class GcpService {
               false,
               projectAvailability.error
             );
-            clearInterval(timer);
+            stop(timer);
             resolve(projectAvailability);
           } else if (projectAvailability.response) {
             this.notify(
@@ -511,14 +539,14 @@ export class GcpService {
               null,
               `Project "${createdPorject.name}" is ready.`
             );
-            clearInterval(timer);
+            stop(timer);
             resolve(projectAvailability);
           }
         } catch (e) {
-          clearInterval(timer);
+          stop(timer);
           reject(e);
         }
-      }, 1000);
+      });
     });
   }
 
@@ -688,33 +716,37 @@ export class GcpService {
       );
 
       let response;
-      let timer = null;
-      timer = setInterval(async _ => {
-        response = await this.fetch(
-          `https://servicemanagement.googleapis.com/v1/${enableOperation.name}`
-        );
+      const stop = this.poll(async timer => {
+        try {
+          response = await this.fetch(
+            `https://servicemanagement.googleapis.com/v1/${enableOperation.name}`
+          );
 
-        if (response.done) {
-          clearInterval(timer);
-          this.notify(
-            OperationType.EnablingCloudFunctionService,
-            false,
-            true,
-            null,
-            `Enabled Cloud Function service for "${projectId}".`
-          );
-          resolve(response);
-        } else if (response.error) {
-          clearInterval(timer);
-          this.notify(
-            OperationType.EnablingCloudFunctionService,
-            false,
-            false,
-            response.error
-          );
-          resolve(response);
+          if (response.done) {
+            stop(timer);
+            this.notify(
+              OperationType.EnablingCloudFunctionService,
+              false,
+              true,
+              null,
+              `Enabled Cloud Function service for "${projectId}".`
+            );
+            resolve(response);
+          } else if (response.error) {
+            stop(timer);
+            this.notify(
+              OperationType.EnablingCloudFunctionService,
+              false,
+              false,
+              response.error
+            );
+            resolve(response);
+          }
+        } catch (e) {
+          reject(e);
+          stop(timer);
         }
-      }, 1000);
+      });
     });
   }
 
@@ -762,37 +794,71 @@ export class GcpService {
 
         let response;
         const stop = this.poll(async timer => {
-          response = await this.fetch(
-            `https://cloudfunctions.googleapis.com/v1beta2/${operation.name}`
-          );
-          console.log(response);
-          if (response.error) {
-            // error
-
-            stop(timer);
-            resolve(response);
-            this.notify(
-              OperationType.CreatingCloudFunction,
-              false,
-              false,
-              response.error
+          try {
+            response = await this.fetch(
+              `https://cloudfunctions.googleapis.com/v1beta2/${operation.name}`
             );
-          } else if (response.done) {
-            // success
+            console.log(response);
+            if (response.error) {
+              // error
 
+              stop(timer);
+              resolve(response);
+              this.notify(
+                OperationType.CreatingCloudFunction,
+                false,
+                false,
+                response.error
+              );
+            } else if (response.done) {
+              // success
+
+              stop(timer);
+              resolve(response);
+              this.notify(
+                OperationType.CreatingCloudFunction,
+                false,
+                false,
+                null,
+                `Creating Cloud Function "${entryPoint}"...`
+              );
+            }
+          } catch (e) {
+            reject(e);
             stop(timer);
-            resolve(response);
-            this.notify(
-              OperationType.CreatingCloudFunction,
-              false,
-              false,
-              null,
-              `Creating Cloud Function "${entryPoint}"...`
-            );
           }
         });
       }
     });
+  }
+
+  async createCloudRepository(projectId: string) {
+
+    this.notify(OperationType.CreatingCloudRepository, true, false);
+
+    const repoInfo: Repo = await this.fetch(
+      `https://sourcerepo.googleapis.com/v1/projects/${projectId}/repos`, {
+        method: 'POST',
+        body: {
+          name: `projects/${projectId}/repos/default`,
+          // mirrorConfig seems to be read only!!!
+          // mirrorConfig: {
+          //   url: 'https://github.com/actions-on-google-builder/actions-on-google-project-template.git'
+          // }
+        } as Repo
+      }
+    );
+    console.log(repoInfo);
+
+    if (repoInfo.error) {
+      this.notify(OperationType.CreatingCloudRepository, false, false, repoInfo.error);
+    }
+    else {
+      // success
+      this.notify(OperationType.CreatingCloudRepository, false, true, null, `Created Cloud Repository for "${projectId}".`);
+    }
+
+    return repoInfo;
   }
 
   poll(callback: Function) {
