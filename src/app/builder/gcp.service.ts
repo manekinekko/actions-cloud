@@ -1,176 +1,27 @@
-import { Status, Operation, ProjectBillingInfo } from "./gcp.service";
+import {
+  Operation,
+  ProjectBillingInfo,
+  Repo,
+  TransferJob,
+  Step,
+  OperationType,
+  Project,
+  BillingAccounts,
+  BillingAccount,
+  RoleRequest,
+  SourceRepository,
+  CloudFunction,
+  BucketResource,
+  TransferJobStatus,
+  Status,
+  Role
+} from "./gcp.types";
 import { Injectable } from "@angular/core";
 import { Subject } from "rxjs/Subject";
 import { MdSnackBar } from "@angular/material";
 
-/************* TYPES *************/
-
-export enum OperationType {
-  CreatingProject,
-  CheckingProjectAvailability,
-  CheckingBilling,
-  EnablingBilling,
-  CreatingCloudRepository,
-  CheckingPermissions,
-  EnablingCloudFunctionService,
-  CreatingCloudFunction,
-  UploadingProjectTemplate
-}
-
-export enum LifecycleState {
-  LIFECYCLE_STATE_UNSPECIFIED,
-  ACTIVE,
-  DELETE_REQUESTED,
-  DELETE_IN_PROGRESS
-}
-
-export enum CloudFunctionStatus {
-  STATUS_UNSPECIFIED,
-  READY,
-  FAILED,
-  DEPLOYING,
-  DELETING
-}
-
-export enum RoleLaunchStage {
-  ALPHA,
-  BETA,
-  GA,
-  DEPRECATED,
-  DISABLED,
-  EAP
-}
-
-export interface ProjectBillingInfo {
-  name?: string;
-  projectId?: string;
-  billingAccountName?: string;
-  billingEnabled?: boolean;
-  error?: Status;
-}
-
-export interface BillingAccount {
-  name?: string;
-  open?: boolean;
-  displayName?: string;
-}
-
-export interface BillingAccounts {
-  billingAccounts?: Array<BillingAccount>;
-  error?: Status;
-}
-
-export interface Repo {
-  name?: string;
-  size?: string;
-  url?: string;
-  mirrorConfig?: MirrorConfig;
-  error?: Status;
-}
-
-export interface MirrorConfig {
-  url?: string;
-  webhookId?: string;
-  deployKeyId?: string;
-}
-
-export interface Operation {
-  name?: string;
-  metadata?: {
-    "@type"?: string;
-  };
-  done?: boolean;
-  error?: Status;
-  response?: {
-    "@type"?: string;
-  };
-}
-
-export interface Status {
-  code?: number;
-  status?: string;
-  message?: string;
-  details?: Array<{
-    "@type": string;
-    [name: string]: string;
-  }>;
-}
-
-export interface Project {
-  projectNumber?: string;
-  projectId?: string;
-  lifecycleState?: LifecycleState;
-  name?: string;
-  createTime?: string;
-  labels?: {
-    [name: string]: string;
-  };
-  parent?: ResourceId;
-}
-
-export interface ResourceId {
-  type?: string;
-  id?: string;
-}
-
-export interface Step {
-  isValid?: boolean;
-  isDirty?: boolean;
-  isWorking?: boolean;
-  description?: string;
-  error?: string;
-}
-
-export interface CloudFunction {
-  name?: string;
-  status?: CloudFunctionStatus;
-  latestOperation?: string;
-  entryPoint?: string;
-  timeout?: string;
-  availableMemoryMb?: number;
-  serviceAccount?: string;
-  updateTime?: string;
-  sourceArchiveUrl?: string;
-  sourceRepository?: SourceRepository;
-  httpsTrigger?: HTTPSTrigger;
-  eventTrigger?: EventTrigger;
-}
-
-export interface HTTPSTrigger {
-  url: string;
-}
-
-export interface EventTrigger {
-  eventType?: string;
-  resource?: string;
-}
-
-export interface SourceRepository {
-  repositoryUrl?: string;
-  sourcePath?: string;
-  deployedRevision?: string;
-  branch?: string;
-  tag?: string;
-  revision?: string;
-}
-
-export interface Role {
-  name?: string;
-  title?: string;
-  description?: string;
-  includedPermissions?: string[];
-  stage?: RoleLaunchStage;
-  etag?: string;
-  deleted?: boolean;
-  error?: Status;
-}
-
-export interface RoleRequest {
-  roleId?: string;
-  role?: Role;
-}
-
-/************* TYPES *************/
+const BUCKET_NAME = "bucket";
+const CLOUD_FUNCTION_ENTRYPOINT = "agent";
 
 @Injectable()
 export class GcpService {
@@ -230,6 +81,22 @@ export class GcpService {
         error: "",
         description: `Enabling billing...`
       },
+      // CreatingCloudBucket
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Creating Cloud Bucket...`
+      },
+      // UploadingProjectTemplate
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Uploading project template...`
+      },
       // CreatingCloudRepository
       {
         isValid: false,
@@ -238,7 +105,7 @@ export class GcpService {
         error: "",
         description: `Creating Cloud Repository...`
       },
-      // CheckingPermissions
+      // CheckingCloudFunctionPermissions
       {
         isValid: false,
         isDirty: false,
@@ -261,14 +128,6 @@ export class GcpService {
         isWorking: false,
         error: "",
         description: `Creating Cloud Function "agent"...`
-      },
-      // UploadingProjectTemplate
-      {
-        isValid: false,
-        isDirty: false,
-        isWorking: false,
-        error: "",
-        description: `Uploading project template...`
       }
     ];
   }
@@ -307,7 +166,9 @@ export class GcpService {
   guard(operation: Operation): boolean {
     const predicate = operation && !operation.error;
 
-    console.log("[GUARD]", operation);
+    console.group("[GUARD]");
+    console.log(operation);
+    console.groupEnd();
 
     return predicate;
   }
@@ -324,14 +185,15 @@ export class GcpService {
       let checkedProject: Operation = { response: {} };
       let billingAccount: ProjectBillingInfo = {};
       let repoInfo: Repo = {};
+      let cloudBucketInfo: Operation = {};
       let projectBillingInfo: ProjectBillingInfo = {};
       let role: Role = {};
       let cloudFunctionServiceOperation: Operation = {};
       let cloudFunctionOperation: Operation = {};
+      let transferJobOperation: TransferJob = {};
       //**//
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.CreatingProject].isValid) {
+      if (this.shouldSkip(OperationType.CreatingProject)) {
         this.notify(
           OperationType.CreatingProject,
           false,
@@ -341,12 +203,10 @@ export class GcpService {
         );
       } else {
         createdPorject = await this.createCloudProject(projectId);
+        this.saveSession(OperationType.CreatingProject, createdPorject);
       }
 
-      // should we skip this step?
-      if (
-        this.operationSteps[OperationType.CheckingProjectAvailability].isValid
-      ) {
+      if (this.shouldSkip(OperationType.CheckingProjectAvailability)) {
         this.notify(
           OperationType.CheckingProjectAvailability,
           false,
@@ -358,10 +218,13 @@ export class GcpService {
         checkedProject =
           this.guard(createdPorject) &&
           (await this.checkProjectAvailability(createdPorject));
+        this.saveSession(
+          OperationType.CheckingProjectAvailability,
+          createdPorject
+        );
       }
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.CheckingBilling].isValid) {
+      if (this.shouldSkip(OperationType.CheckingBilling)) {
         this.notify(
           OperationType.CheckingBilling,
           false,
@@ -372,10 +235,10 @@ export class GcpService {
       } else {
         billingAccount =
           this.guard(checkedProject) && (await this.checkBilling());
+        this.saveSession(OperationType.CheckingBilling, billingAccount);
       }
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.EnablingBilling].isValid) {
+      if (this.shouldSkip(OperationType.EnablingBilling)) {
         this.notify(
           OperationType.EnablingBilling,
           false,
@@ -387,10 +250,43 @@ export class GcpService {
         projectBillingInfo =
           this.guard(billingAccount) &&
           (await this.enablingBillingInfo(projectId, billingAccount));
+        this.saveSession(OperationType.EnablingBilling, projectBillingInfo);
       }
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.CreatingCloudRepository].isValid) {
+      if (this.shouldSkip(OperationType.CreatingCloudBucket)) {
+        this.notify(
+          OperationType.CreatingCloudBucket,
+          false,
+          true,
+          null,
+          `Created Cloud Bucket for "${projectId}".`
+        );
+      } else {
+        cloudBucketInfo =
+          this.guard(projectBillingInfo) &&
+          (await this.createCloudBucket(projectId));
+        this.saveSession(OperationType.CreatingCloudBucket, cloudBucketInfo);
+      }
+
+      if (this.shouldSkip(OperationType.UploadingProjectTemplate)) {
+        this.notify(
+          OperationType.UploadingProjectTemplate,
+          false,
+          true,
+          null,
+          `Created Project template for "${projectId}".`
+        );
+      } else {
+        transferJobOperation =
+          this.guard(cloudBucketInfo) &&
+          (await this.createTransfertJob(projectId));
+        this.saveSession(
+          OperationType.UploadingProjectTemplate,
+          transferJobOperation
+        );
+      }
+
+      if (this.shouldSkip(OperationType.CreatingCloudRepository)) {
         this.notify(
           OperationType.CreatingCloudRepository,
           false,
@@ -400,14 +296,16 @@ export class GcpService {
         );
       } else {
         repoInfo =
+          /** start creating a repo just after checking the billing info */
+          /** don't wait for the job transfer */
           this.guard(projectBillingInfo) &&
           (await this.createCloudRepository(projectId));
+        this.saveSession(OperationType.CreatingCloudRepository, repoInfo);
       }
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.CheckingPermissions].isValid) {
+      if (this.shouldSkip(OperationType.CheckingCloudFunctionPermissions)) {
         this.notify(
-          OperationType.CheckingPermissions,
+          OperationType.CheckingCloudFunctionPermissions,
           false,
           true,
           null,
@@ -417,14 +315,12 @@ export class GcpService {
         role =
           this.guard(repoInfo) &&
           (await this.checkCloudFunctionPermissions(projectId));
+        this.saveSession(OperationType.CheckingCloudFunctionPermissions, role);
       }
 
-      // should we skip this step?
-      if (
-        this.operationSteps[OperationType.EnablingCloudFunctionService].isValid
-      ) {
+      if (this.shouldSkip(OperationType.EnablingCloudFunctionService)) {
         this.notify(
-          OperationType.CheckingPermissions,
+          OperationType.EnablingCloudFunctionService,
           false,
           true,
           null,
@@ -434,12 +330,15 @@ export class GcpService {
         cloudFunctionServiceOperation =
           this.guard(role) &&
           (await this.enableCloudFunctionService(projectId));
+        this.saveSession(
+          OperationType.EnablingCloudFunctionService,
+          cloudFunctionServiceOperation
+        );
       }
 
-      // should we skip this step?
-      if (this.operationSteps[OperationType.CreatingCloudFunction].isValid) {
+      if (this.shouldSkip(OperationType.CreatingCloudFunction)) {
         this.notify(
-          OperationType.CheckingPermissions,
+          OperationType.CreatingCloudFunction,
           false,
           true,
           null,
@@ -449,14 +348,27 @@ export class GcpService {
         cloudFunctionOperation =
           this.guard(cloudFunctionServiceOperation) &&
           (await this.createCloudFunction(projectId));
+        this.saveSession(
+          OperationType.CreatingCloudFunction,
+          cloudFunctionOperation
+        );
       }
-
-      console.log(cloudFunctionOperation);
     } else {
       console.warn("Google Access Token is not set", this.accessToken.google);
     }
 
     return Promise.resolve(true);
+  }
+
+  shouldSkip(operation: OperationType) {
+    const operationSteps = this.getSavedSession();
+    if (operationSteps[operation]) {
+      console.group("[RESTORING]", OperationType[operation]);
+      console.log(operationSteps[operation]);
+      console.groupEnd();
+    }
+
+    return this.operationSteps[operation].isValid;
   }
 
   /**
@@ -637,7 +549,7 @@ export class GcpService {
   }
 
   async checkCloudFunctionPermissions(projectId: string): Promise<Role> {
-    this.notify(OperationType.CheckingPermissions, true, false);
+    this.notify(OperationType.CheckingCloudFunctionPermissions, true, false);
 
     const roleInfo: Role = await this.fetch(
       `https://iam.googleapis.com/v1/projects/${projectId}/roles`,
@@ -654,7 +566,7 @@ export class GcpService {
       // roleInfo.name: "projects/aaaaaazzzzzzzzzzzzeeeeeeeee/roles/cloudfunctions.functions.create"
       // roleInfo.etag: BwVWCkmWyrY=
       this.notify(
-        OperationType.CheckingPermissions,
+        OperationType.CheckingCloudFunctionPermissions,
         false,
         true,
         null,
@@ -664,7 +576,7 @@ export class GcpService {
       // error
 
       this.notify(
-        OperationType.CheckingPermissions,
+        OperationType.CheckingCloudFunctionPermissions,
         false,
         false,
         roleInfo.error
@@ -678,7 +590,7 @@ export class GcpService {
    * @notUsed
    */
   async undeleteRole(projectId: string): Promise<Role> {
-    this.notify(OperationType.CheckingPermissions, true, false);
+    this.notify(OperationType.CheckingCloudFunctionPermissions, true, false);
 
     const role = "cloudfunctions.functions.create";
     const etag = "BwVWCkmWyrY=";
@@ -760,7 +672,7 @@ export class GcpService {
       this.notify(OperationType.CreatingCloudFunction, true, false);
 
       const locationId = `projects/${projectId}/locations/us-central1`;
-      const entryPoint = "agent";
+      const entryPoint = CLOUD_FUNCTION_ENTRYPOINT;
 
       const operation: Operation = await this.fetch(
         `https://cloudfunctions.googleapis.com/v1beta2/${locationId}/functions`,
@@ -833,15 +745,15 @@ export class GcpService {
   }
 
   async createCloudRepository(projectId: string) {
-
     this.notify(OperationType.CreatingCloudRepository, true, false);
 
     const repoInfo: Repo = await this.fetch(
-      `https://sourcerepo.googleapis.com/v1/projects/${projectId}/repos`, {
-        method: 'POST',
+      `https://sourcerepo.googleapis.com/v1/projects/${projectId}/repos`,
+      {
+        method: "POST",
         body: {
-          name: `projects/${projectId}/repos/default`,
-          // mirrorConfig seems to be read only!!!
+          name: `projects/${projectId}/repos/default`
+          // @todo mirrorConfig seems to be read only!!!
           // mirrorConfig: {
           //   url: 'https://github.com/actions-on-google-builder/actions-on-google-project-template.git'
           // }
@@ -851,22 +763,137 @@ export class GcpService {
     console.log(repoInfo);
 
     if (repoInfo.error) {
-      this.notify(OperationType.CreatingCloudRepository, false, false, repoInfo.error);
-    }
-    else {
+      this.notify(
+        OperationType.CreatingCloudRepository,
+        false,
+        false,
+        repoInfo.error
+      );
+    } else {
       // success
-      this.notify(OperationType.CreatingCloudRepository, false, true, null, `Created Cloud Repository for "${projectId}".`);
+      this.notify(
+        OperationType.CreatingCloudRepository,
+        false,
+        true,
+        null,
+        `Created Cloud Repository for "${projectId}".`
+      );
     }
 
     return repoInfo;
   }
 
-  poll(callback: Function) {
+  async createCloudBucket(projectId: string) {
+    this.notify(OperationType.CreatingCloudBucket, true, false);
+    const bucketInfo: BucketResource = await this.fetch(
+      `https://www.googleapis.com/storage/v1/b?project=${projectId}`,
+      {
+        method: "POST",
+        body: {
+          name: `${projectId}-${BUCKET_NAME}`,
+          location: "us-central1"
+        } as BucketResource
+      }
+    );
+
+    if (bucketInfo.error) {
+      this.notify(
+        OperationType.CreatingCloudBucket,
+        false,
+        false,
+        bucketInfo.error
+      );
+    } else {
+      this.notify(
+        OperationType.CreatingCloudBucket,
+        false,
+        true,
+        null,
+        `Created Cloud Bucket "${bucketInfo.name}".`
+      );
+    }
+
+    console.log(bucketInfo);
+    return bucketInfo;
+  }
+
+  //@todo
+  async createTransfertJob(projectId: string) {
+    this.notify(OperationType.UploadingProjectTemplate, true, false);
+
+    return new Promise(async (resolve, reject) => {
+      const scheduleDay = {
+        day: 6,
+        month: 8,
+        year: 2017
+      };
+
+      const transfertJob: TransferJob = await this.fetch(
+        `https://storagetransfer.googleapis.com/v1/transferJobs`,
+        {
+          method: "POST",
+          body: {
+            status: TransferJobStatus[TransferJobStatus.ENABLED],
+            projectId,
+            schedule: {
+              scheduleStartDate: scheduleDay,
+              scheduleEndDate: scheduleDay
+            },
+            transferSpec: {
+              httpDataSource: {
+                listUrl:
+                  "https://raw.githubusercontent.com/actions-on-google-builder/app-builder/master/gcp-storage-transfer/actions-on-google-project-template.tsv"
+              },
+              gcsDataSink: {
+                bucketName: `${projectId}-${BUCKET_NAME}`
+              },
+              transferOptions: {
+                deleteObjectsFromSourceAfterTransfer: false,
+                overwriteObjectsAlreadyExistingInSink: false
+              }
+            }
+          } as TransferJob
+        }
+      );
+
+      console.log(transfertJob);
+
+      if (transfertJob.error) {
+        this.notify(
+          OperationType.UploadingProjectTemplate,
+          false,
+          false,
+          transfertJob.error
+        );
+      } else {
+        this.notify(OperationType.UploadingProjectTemplate, false, true);
+      }
+
+      // let response;
+      // this.poll( async(timer) => {
+
+      //   // https://storagetransfer.googleapis.com/v1/tranferOperations?filter=%7B"project_id":"PROJECT_ID","job_id":%5B"transferJobs/00000000000000000000"%5D%7D
+
+      // });
+    });
+  }
+
+  /**
+   * Run a block of code every 1 second.
+   * 
+   * @param callback The code to be executed every 1 second
+   */
+  poll(callback: Function, max = 3) {
     let timer = null;
+    let count = 0;
     timer = setInterval(arg => {
       try {
         callback(timer);
       } catch (e) {
+        clearInterval(timer);
+      }
+
+      if (count++ >= max) {
         clearInterval(timer);
       }
     }, 1000);
@@ -917,7 +944,6 @@ export class GcpService {
       }
     } else {
       this.operationSteps[id].error = "";
-
       if (snackBar) {
         snackBar.afterDismissed().subscribe(() => {
           this.resetOperations();
@@ -926,28 +952,42 @@ export class GcpService {
     }
   }
 
+  saveSession(operation: OperationType, entity: any) {
+    const ope = this.getSavedSession();
+    ope[operation] = entity;
+    localStorage.setItem("operationSteps", JSON.stringify(ope));
+  }
+
+  getSavedSession(): { [key: string]: string } {
+    return JSON.parse(localStorage.getItem("operationSteps") || "{}");
+  }
+
   isAllOperationsOK() {
     return this.operationSteps.every(s => s.isValid === true);
   }
 
-  async fetch(url, opts = {} as any) {
-    console.log("requesting", url);
+  async fetch(url, opts = {} as any): Promise<{ [key: string]: string }> {
+    console.group("[REQUESTING]", url);
+    console.log(opts);
 
     if (opts.body) {
       opts.body = JSON.stringify(opts.body);
     }
 
     opts.headers = {
-      Authorization: `Bearer ${this.accessToken.google}`
+      Authorization: `Bearer ${this.accessToken.google}`,
+      "Content-Type": "application/json"
     };
 
     try {
       const f = await fetch(url, opts);
-      const r = await f.json();
-      console.log(r);
-      return r;
+      const json = await f.json();
+      console.log(json);
+      console.groupEnd();
+      return json;
     } catch (e) {
       console.error("fetch", e);
+      console.groupEnd();
     }
   }
 }
