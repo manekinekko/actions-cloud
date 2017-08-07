@@ -1,14 +1,16 @@
+// NOTE: order is important!
 export enum OperationType {
   CreatingProject,
   CheckingProjectAvailability,
   CheckingBilling,
   EnablingBilling,
   CreatingCloudBucket,
+  EnablePermissionsForGCPDataSink,
   UploadingProjectTemplate,
   CreatingCloudRepository,
   CheckingCloudFunctionPermissions,
   EnablingCloudFunctionService,
-  CreatingCloudFunction,
+  CreatingCloudFunction
 }
 
 export enum LifecycleState {
@@ -42,12 +44,15 @@ export enum TransferJobStatus {
   DELETED
 }
 
-export interface ProjectBillingInfo {
+export interface ErrorStatus {
+  error?: Status;
+}
+
+export interface ProjectBillingInfo extends ErrorStatus {
   name?: string;
   projectId?: string;
   billingAccountName?: string;
   billingEnabled?: boolean;
-  error?: Status;
 }
 
 export interface BillingAccount {
@@ -56,20 +61,18 @@ export interface BillingAccount {
   displayName?: string;
 }
 
-export interface BillingAccounts {
+export interface BillingAccounts extends ErrorStatus {
   billingAccounts?: Array<BillingAccount>;
-  error?: Status;
 }
 
-export interface Repo {
+export interface Repo extends ErrorStatus {
   name?: string;
   size?: string;
   url?: string;
   mirrorConfig?: MirrorConfig;
-  error?: Status;
 }
 
-export interface BucketResource {
+export interface BucketResource extends ErrorStatus {
   kind?: string; // "storage#bucket";
   id?: string;
   selfLink?: string;
@@ -85,7 +88,6 @@ export interface BucketResource {
   };
   storageClass?: string;
   etag?: string;
-  error?: Status;
 }
 
 export interface MirrorConfig {
@@ -94,19 +96,18 @@ export interface MirrorConfig {
   deployKeyId?: string;
 }
 
-export interface Operation {
+export interface Operation extends ErrorStatus {
   name?: string;
   metadata?: {
     "@type"?: string;
   };
   done?: boolean;
-  error?: Status;
   response?: {
     "@type"?: string;
   };
 }
 
-export interface TransferJob {
+export interface TransferJob extends ErrorStatus {
   name?: string;
   description?: string;
   projectId?: string;
@@ -116,7 +117,6 @@ export interface TransferJob {
   creationTime?: string;
   lastModificationTime?: string;
   deletionTime?: string;
-  error?: Status;
 }
 
 export interface TransferSpec {
@@ -174,6 +174,7 @@ export interface Step {
   isDirty?: boolean;
   isWorking?: boolean;
   description?: string;
+  description_2?: string;
   error?: string;
 }
 
@@ -210,7 +211,7 @@ export interface SourceRepository {
   revision?: string;
 }
 
-export interface Role {
+export interface Role extends ErrorStatus {
   name?: string;
   title?: string;
   description?: string;
@@ -218,10 +219,23 @@ export interface Role {
   stage?: RoleLaunchStage;
   etag?: string;
   deleted?: boolean;
-  error?: Status;
 }
 
 export interface RoleRequest {
   roleId?: string;
   role?: Role;
+}
+
+export interface GoogleServiceAccount extends ErrorStatus {
+  accountEmail?: string;
+}
+
+export interface IamPolicy extends ErrorStatus {
+  kind?: string; //storage#policy,
+  resourceId?: string;
+  bindings?: {
+    role?: string;
+    members?: string[];
+  }[];
+  etag?: string;
 }

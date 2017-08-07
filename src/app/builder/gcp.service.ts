@@ -14,7 +14,9 @@ import {
   BucketResource,
   TransferJobStatus,
   Status,
-  Role
+  Role,
+  GoogleServiceAccount,
+  IamPolicy
 } from "./gcp.types";
 import { Injectable } from "@angular/core";
 import { Subject } from "rxjs/Subject";
@@ -38,12 +40,17 @@ export class GcpService {
     };
 
     this.onSessionExpired = new Subject();
+
+    this.initiliaze();
+  }
+
+  initiliaze() {
     this.resetOperations();
 
     //@todo remove this
     this.__skipSteps(
       OperationType.CreatingProject,
-      OperationType.EnablingBilling
+      OperationType.CheckingProjectAvailability
     );
   }
 
@@ -55,7 +62,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Creating project...`
+        description: `Creating project...`,
+        description_2: `Project created.`
       },
       // CheckingProjectAvailability
       {
@@ -63,7 +71,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Checking project availability...`
+        description: `Checking project availability...`,
+        description_2: `Project is ready.`
       },
       // CheckingBilling
       {
@@ -71,7 +80,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Checking billing...`
+        description: `Checking billing...`,
+        description_2: `Found Billing account.`
       },
       // EnablingBilling
       {
@@ -79,7 +89,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Enabling billing...`
+        description: `Enabling billing...`,
+        description_2: `Enabled Billing for project.`
       },
       // CreatingCloudBucket
       {
@@ -87,7 +98,17 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Creating Cloud Bucket...`
+        description: `Creating Cloud Bucket...`,
+        description_2: `Created Cloud Bucket.`
+      },
+      // EnablePermissionsForGCPDataSink
+      {
+        isValid: false,
+        isDirty: false,
+        isWorking: false,
+        error: "",
+        description: `Granting write permissions for GCP Data Sink...`,
+        description_2: `Granted write permissions for bucket.`
       },
       // UploadingProjectTemplate
       {
@@ -95,7 +116,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Uploading project template...`
+        description: `Uploading project template...`,
+        description_2: `Uploaded Project template to bucket.`
       },
       // CreatingCloudRepository
       {
@@ -103,7 +125,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Creating Cloud Repository...`
+        description: `Creating Cloud Repository...`,
+        description_2: `Created Cloud Repository.`
       },
       // CheckingCloudFunctionPermissions
       {
@@ -111,7 +134,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Checking permissions...`
+        description: `Granting permissions to use Cloud Functions...`,
+        description_2: `Granted permissions fro Cloud Functions.`
       },
       // EnablingCloudFunctionService
       {
@@ -119,7 +143,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Enabling Cloud Function service...`
+        description: `Enabling Cloud Function service...`,
+        description_2: `Enabled Cloud Function service.`
       },
       // CreatingCloudFunction
       {
@@ -127,7 +152,8 @@ export class GcpService {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Creating Cloud Function "agent"...`
+        description: `Creating Cloud Function "agent"...`,
+        description_2: `Created Cloud Function.`
       }
     ];
   }
@@ -166,7 +192,7 @@ export class GcpService {
   guard(operation: Operation): boolean {
     const predicate = operation && !operation.error;
 
-    console.group("[GUARD]");
+    console.groupCollapsed("[GUARD]");
     console.log(operation);
     console.groupEnd();
 
@@ -191,15 +217,14 @@ export class GcpService {
       let cloudFunctionServiceOperation: Operation = {};
       let cloudFunctionOperation: Operation = {};
       let transferJobOperation: TransferJob = {};
+      let dataSinkPermissions: IamPolicy = {};
       //**//
 
       if (this.shouldSkip(OperationType.CreatingProject)) {
         this.notify(
           OperationType.CreatingProject,
           false,
-          true,
-          null,
-          `Project "${projectId}" created.`
+          true
         );
       } else {
         createdPorject = await this.createCloudProject(projectId);
@@ -210,9 +235,7 @@ export class GcpService {
         this.notify(
           OperationType.CheckingProjectAvailability,
           false,
-          true,
-          null,
-          `Project "${createdPorject.name}" is ready.`
+          true
         );
       } else {
         checkedProject =
@@ -228,9 +251,7 @@ export class GcpService {
         this.notify(
           OperationType.CheckingBilling,
           false,
-          true,
-          null,
-          `Found Billing account.`
+          true
         );
       } else {
         billingAccount =
@@ -242,9 +263,7 @@ export class GcpService {
         this.notify(
           OperationType.EnablingBilling,
           false,
-          true,
-          null,
-          `Enabled Billing for "${projectId}".`
+          true
         );
       } else {
         projectBillingInfo =
@@ -257,9 +276,7 @@ export class GcpService {
         this.notify(
           OperationType.CreatingCloudBucket,
           false,
-          true,
-          null,
-          `Created Cloud Bucket for "${projectId}".`
+          true
         );
       } else {
         cloudBucketInfo =
@@ -268,18 +285,32 @@ export class GcpService {
         this.saveSession(OperationType.CreatingCloudBucket, cloudBucketInfo);
       }
 
+      if (this.shouldSkip(OperationType.EnablePermissionsForGCPDataSink)) {
+        this.notify(
+          OperationType.EnablePermissionsForGCPDataSink,
+          false,
+          true
+        );
+      } else {
+        dataSinkPermissions =
+          this.guard(cloudBucketInfo) &&
+          (await this.enablePermissionsForDataSink(projectId));
+        this.saveSession(
+          OperationType.EnablePermissionsForGCPDataSink,
+          dataSinkPermissions
+        );
+      }
+
       if (this.shouldSkip(OperationType.UploadingProjectTemplate)) {
         this.notify(
           OperationType.UploadingProjectTemplate,
           false,
-          true,
-          null,
-          `Created Project template for "${projectId}".`
+          true
         );
       } else {
         transferJobOperation =
           this.guard(cloudBucketInfo) &&
-          (await this.createTransfertJob(projectId));
+          (await this.createTransferJob(projectId));
         this.saveSession(
           OperationType.UploadingProjectTemplate,
           transferJobOperation
@@ -290,15 +321,11 @@ export class GcpService {
         this.notify(
           OperationType.CreatingCloudRepository,
           false,
-          true,
-          null,
-          `Created Cloud Repository for "${projectId}".`
+          true
         );
       } else {
         repoInfo =
-          /** start creating a repo just after checking the billing info */
-          /** don't wait for the job transfer */
-          this.guard(projectBillingInfo) &&
+          this.guard(transferJobOperation) &&
           (await this.createCloudRepository(projectId));
         this.saveSession(OperationType.CreatingCloudRepository, repoInfo);
       }
@@ -307,9 +334,7 @@ export class GcpService {
         this.notify(
           OperationType.CheckingCloudFunctionPermissions,
           false,
-          true,
-          null,
-          `Permissions set for "${projectId}".`
+          true
         );
       } else {
         role =
@@ -322,9 +347,7 @@ export class GcpService {
         this.notify(
           OperationType.EnablingCloudFunctionService,
           false,
-          true,
-          null,
-          `Enabled Cloud Function service for "${projectId}".`
+          true
         );
       } else {
         cloudFunctionServiceOperation =
@@ -340,9 +363,7 @@ export class GcpService {
         this.notify(
           OperationType.CreatingCloudFunction,
           false,
-          true,
-          null,
-          `Created Cloud Function for "${projectId}".`
+          true
         );
       } else {
         cloudFunctionOperation =
@@ -363,7 +384,7 @@ export class GcpService {
   shouldSkip(operation: OperationType) {
     const operationSteps = this.getSavedSession();
     if (operationSteps[operation]) {
-      console.group("[RESTORING]", OperationType[operation]);
+      console.groupCollapsed("[RESTORING]", OperationType[operation]);
       console.log(operationSteps[operation]);
       console.groupEnd();
     }
@@ -372,7 +393,7 @@ export class GcpService {
   }
 
   /**
-   * Request the creation of a GCP project.
+   * Request that a new Project be created. The result is an Operation which can be used to track the creation process. 
    * 
    * @param projectId the project ID to create on the GCP
    */
@@ -418,7 +439,9 @@ export class GcpService {
   }
 
   /**
-   * Check if the created project is available. Starts polling (1 second) and exits when the project is ready.
+   * Gets the latest state of a long-running operation. 
+   * Check if the created project is available. 
+   * Starts polling (1 second) and exits when the project is ready.
    * 
    * @param createdPorject The operation info received after starting created a new GCP project
    */
@@ -430,7 +453,7 @@ export class GcpService {
       const stop = this.poll(async timer => {
         try {
           projectAvailability = await this.fetch(
-            `https://cloudresourcemanager.googleapis.com/v1/${createdPorject.name}`
+            `https://cloudresourcemanager.googleapis.com/v1/operations/${createdPorject.name}`
           );
           console.log(projectAvailability);
 
@@ -640,8 +663,7 @@ export class GcpService {
               OperationType.EnablingCloudFunctionService,
               false,
               true,
-              null,
-              `Enabled Cloud Function service for "${projectId}".`
+              null
             );
             resolve(response);
           } else if (response.error) {
@@ -663,7 +685,7 @@ export class GcpService {
   }
 
   /**
-   * Create a new Clouf Function for the given project ID.
+   * Create a new Cloud Function for the given project ID.
    * 
    * @param projectId The project ID to link with the new Cloud Function.
    */
@@ -817,8 +839,49 @@ export class GcpService {
     return bucketInfo;
   }
 
-  //@todo
-  async createTransfertJob(projectId: string) {
+  async enablePermissionsForDataSink(projectId: string) {
+    this.notify(OperationType.EnablePermissionsForGCPDataSink, true, false);
+
+    const googleServiceAccounts: GoogleServiceAccount = await this.fetch(
+      `https://storagetransfer.googleapis.com/v1/googleServiceAccounts/${projectId}`
+    );
+
+    if (googleServiceAccounts.error) {
+      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, false, googleServiceAccounts.error);
+      return null;
+    }
+
+    const iam: IamPolicy = await this.fetch(
+      `https://www.googleapis.com/storage/v1/b/${projectId}-${BUCKET_NAME}/iam`,
+      {
+        method: "PUT",
+        body: {
+          kind: "storage#policy",
+          resourceId: `projects/_/buckets/${projectId}-${BUCKET_NAME}`,
+          bindings: [
+            {
+              role: "roles/storage.admin",
+              members: [
+                `serviceAccount:${googleServiceAccounts.accountEmail}`,
+                `projectOwner:${projectId}`
+              ]
+            }
+          ]
+        }
+      }
+    );
+
+    if (iam.error) {
+      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, false, iam.error);
+    }
+    else {
+      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, true, null, `Granted write permissions for "${projectId}".`);
+    }
+    return iam;
+  }
+
+  //@wip
+  async createTransferJob(projectId: string) {
     this.notify(OperationType.UploadingProjectTemplate, true, false);
 
     return new Promise(async (resolve, reject) => {
@@ -828,11 +891,12 @@ export class GcpService {
         year: 2017
       };
 
-      const transfertJob: TransferJob = await this.fetch(
+      const transferJob: TransferJob = await this.fetch(
         `https://storagetransfer.googleapis.com/v1/transferJobs`,
         {
           method: "POST",
           body: {
+            description: 'Transfer Actions on Google project template from Github',
             status: TransferJobStatus[TransferJobStatus.ENABLED],
             projectId,
             schedule: {
@@ -856,17 +920,22 @@ export class GcpService {
         }
       );
 
-      console.log(transfertJob);
+      console.log(transferJob);
 
-      if (transfertJob.error) {
+      const args = encodeURIComponent(`{"projectId":"${projectId}"}`);
+      const transferJobStatus = await this.fetch(`https://storagetransfer.googleapis.com/v1/tranferOperations?filter=%7B"project_id":"aaaaaazzzzzzzzzzzzeeeeeeeee","job_id":%5B"transferJobs/00000000000000000000"%5D%7D`);
+
+      console.log(transferJob);
+
+      if (transferJob.error) {
         this.notify(
           OperationType.UploadingProjectTemplate,
           false,
           false,
-          transfertJob.error
+          transferJob.error
         );
       } else {
-        this.notify(OperationType.UploadingProjectTemplate, false, true);
+        this.notify(OperationType.UploadingProjectTemplate, false, true, null, `Uploaded Project template to bucket "${projectId}-${BUCKET_NAME}".`);
       }
 
       // let response;
@@ -875,6 +944,8 @@ export class GcpService {
       //   // https://storagetransfer.googleapis.com/v1/tranferOperations?filter=%7B"project_id":"PROJECT_ID","job_id":%5B"transferJobs/00000000000000000000"%5D%7D
 
       // });
+
+      return transferJob;
     });
   }
 
@@ -914,13 +985,13 @@ export class GcpService {
     this.operationSteps[id].isWorking = isWorking;
     this.operationSteps[id].isValid = isValid;
 
-    if (description) {
-      this.operationSteps[id].description = description;
+    if (isValid) {
+      this.operationSteps[id].description = this.operationSteps[id].description_2
     }
 
     if (error) {
       const errorMsg = `[${error.status}] ${error.message}`;
-      this.operationSteps[id].error = error.status;
+      this.operationSteps[id].error = error.status || "ERROR";
 
       if (
         error &&
@@ -967,8 +1038,8 @@ export class GcpService {
   }
 
   async fetch(url, opts = {} as any): Promise<{ [key: string]: string }> {
-    console.group("[REQUESTING]", url);
-    console.log(opts);
+    console.info("[REQUESTING]", url);
+    console.info(opts);
 
     if (opts.body) {
       opts.body = JSON.stringify(opts.body);
@@ -979,15 +1050,10 @@ export class GcpService {
       "Content-Type": "application/json"
     };
 
-    try {
-      const f = await fetch(url, opts);
-      const json = await f.json();
-      console.log(json);
-      console.groupEnd();
-      return json;
-    } catch (e) {
-      console.error("fetch", e);
-      console.groupEnd();
-    }
+    const f = await fetch(url, opts);
+    const json = await f.json();
+    console.info(json);
+
+    return json;
   }
 }
