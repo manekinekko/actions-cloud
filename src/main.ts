@@ -8,4 +8,13 @@ if (environment.production) {
   enableProdMode();
 }
 
-platformBrowserDynamic().bootstrapModule(AppModule);
+(async() => {
+  await platformBrowserDynamic().bootstrapModule(AppModule);
+  if ("serviceWorker" in navigator) {
+    try {
+      await navigator.serviceWorker.register("/assets/sw.js");
+    } catch (e) {
+      console.warn("cannot register ServiceWorker");
+    }
+  }
+})();
