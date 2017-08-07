@@ -18,7 +18,7 @@ import {
     <section #sectionRef>
       <ng-content select="app-carousel"></ng-content>
     </section>
-    <ul *ngIf="showDots" ><li *ngFor="let item of carouselComponents; let i=index" [ngClass]="{ 'selected': selected === i }" ><span (click)="select(i)">&nbsp;</span></li></ul>
+    <ul [ngClass]="{ 'show-dots': showDots }" ><li *ngFor="let item of carouselComponents; let i=index" [ngClass]="{ 'selected': selected === i }" ><span (click)="select(i)">&nbsp;</span></li></ul>
   `,
   styles: [`
     :host {
@@ -46,6 +46,12 @@ import {
       margin: 0;
       padding: 0;
       text-align: center;
+      position: relative;
+      transition: top 300ms cubic-bezier(0.250, 0.460, 0.450, 0.940);
+      top: 100px;
+    }
+    :host ul.show-dots {
+      top: 0;
     }
     :host li {
       display: inline-block;
