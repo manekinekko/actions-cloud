@@ -14,6 +14,10 @@ export const environment = {
     messagingSenderId: "571506926720"
   },
   scopes: [
-    "https://www.googleapis.com/auth/cloud-platform"
+    {
+      uri: "https://www.googleapis.com/auth/cloud-platform",
+      description:
+        "View and manage your data across Google Cloud Platform services"
+    }
   ]
 };

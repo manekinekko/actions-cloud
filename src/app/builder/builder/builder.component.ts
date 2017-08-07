@@ -17,7 +17,7 @@ export class BuilderComponent {
   showDots: boolean;
   selectedCarousel: number;
   projectId: string;
-  scopes: string[];
+  scopes: {uri: string; description: string}[];
 
   constructor(
     public afAuth: AngularFireAuth,
@@ -28,8 +28,8 @@ export class BuilderComponent {
 
     afAuth.authState.subscribe(user => {
       this.user = user;
-      if (user) {
-      } else {
+
+      if (!user) {
         this.welcomeScreen();
       }
     });
@@ -39,6 +39,7 @@ export class BuilderComponent {
     this.projectId = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
     this.gcp.restoreToken();
     this.gcp.onSessionExpired.subscribe( async(_) => {
+      this.gcp.initiliaze();      
       await this.logout();
       this.next(1);
     });
@@ -46,19 +47,22 @@ export class BuilderComponent {
       localStorage.getItem("ui.selectedCarousel"),
       10
     );
-    if (storedIndex) {
-      this.next(storedIndex);
+    this.next(storedIndex);
+
+    if (storedIndex > 0) {
       this.showDots = true;
     }
   }
 
   randomProjectId() {
-    this.projectId = generate({ words: 3, number: true }).dashed;
+    if (!this.gcp.operationSteps[1].isValid) {
+      this.projectId = generate({ words: 3, number: true }).dashed;
+    }
   }
 
   welcomeScreen() {
     this.showDots = false;
-    this.projectId = "";
+    // this.projectId = "";
     this.gcp.resetToken();
     this.next(0);
   }
@@ -79,7 +83,7 @@ export class BuilderComponent {
 
   async login() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    this.scopes.forEach(scope => provider.addScope(scope));
+    this.scopes.forEach(scope => provider.addScope(scope.uri));
     const loginInfo = await this.afAuth.auth.signInWithPopup(provider);
     this.gcp.setToken(loginInfo);
   }
