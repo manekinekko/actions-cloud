@@ -7,8 +7,13 @@ body {
     margin: 0;
 }
 
+a {
+    color: #599DF0;
+}
+
 md-toolbar.mat-toolbar.mat-primary,
-button.mat-raised-button.mat-primary {
+button.mat-raised-button.mat-primary,
+a.mat-raised-button.mat-primary {
     background: #599DF0;
     color: #fff;
 }
