@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from "@angular/core";
 
 @Component({
-  selector: 'app-carousel',
+  selector: "app-carousel",
   template: `
     <ng-content></ng-content>
   `,
