@@ -10,7 +10,8 @@ if (environment.production) {
   enableProdMode();
 }
 
-(async() => {
+(async () => {
+  
   await platformBrowserDynamic().bootstrapModule(AppModule);
 
   if ("serviceWorker" in navigator) {
@@ -23,6 +24,6 @@ if (environment.production) {
 
   // make sure to call this AFTER angular bootstraps!
   // tell Firebase not to store the auth info, we'll take care of that.
-  await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+  // await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
   
 })();
