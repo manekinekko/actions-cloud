@@ -1,4 +1,4 @@
-import { SessionService } from './session.service';
+import { SessionService } from "./session.service";
 import { NotifierService } from "./notifier.service";
 import { GcpService } from "./gcp.service";
 import { CarouselModule } from "./../_shared/carousel/carousel.module";
