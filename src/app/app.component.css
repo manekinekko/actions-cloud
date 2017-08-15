@@ -1,0 +1,10 @@
+md-toolbar {
+    position: fixed;
+    height: 200px;
+}
+
+#app-logo {
+    height: 50px;
+    width: 50px;
+    fill: white;
+}
