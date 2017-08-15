@@ -1,4 +1,4 @@
-import { CarouselComponent } from './../carousel/carousel.component';
+import { CarouselComponent } from "./../carousel/carousel.component";
 import {
   Component,
   OnInit,
@@ -9,18 +9,21 @@ import {
   Renderer2,
   Input,
   Output,
-  EventEmitter
+  EventEmitter,
+  AfterContentInit,
+  OnChanges
 } from "@angular/core";
 
 @Component({
-  selector: 'app-carousel-group',
+  selector: "app-carousel-group",
   template: `
     <section #sectionRef>
       <ng-content select="app-carousel"></ng-content>
     </section>
     <ul [ngClass]="{ 'show-dots': showDots }" ><li *ngFor="let item of carouselComponents; let i=index" [ngClass]="{ 'selected': selected === i }" ><span (click)="select(i)">&nbsp;</span></li></ul>
   `,
-  styles: [`
+  styles: [
+    `
     :host {
       display: block;
       overflow: hidden;
@@ -31,7 +34,7 @@ import {
       display: flex;
       align-content: center;
       align-items: center;
-      width: 3000px;
+      width: 6000px;
       overflow: hidden;
       padding: 5px;
       transition: transform 200ms cubic-bezier(0.250, 0.460, 0.450, 0.940);
@@ -70,12 +73,14 @@ import {
       cursor: pointer;
       display: block;
     }
-  `]
+  `
+  ]
 })
-export class CarouselGroupComponent implements OnInit {
-
-  @ViewChild('sectionRef') sectionRef: ElementRef;
-  @ContentChildren(CarouselComponent) carouselComponents: QueryList<CarouselComponent>;
+export class CarouselGroupComponent
+  implements OnInit, AfterContentInit, OnChanges {
+  @ViewChild("sectionRef") sectionRef: ElementRef;
+  @ContentChildren(CarouselComponent)
+  carouselComponents: QueryList<CarouselComponent>;
 
   @Input() selected: number;
   @Input() showDots: boolean;
@@ -84,41 +89,45 @@ export class CarouselGroupComponent implements OnInit {
 
   step: number;
 
-  constructor(
-    public r: Renderer2
-  ) {
+  constructor(public r: Renderer2) {
     this.step = 560;
     this.selected = 0;
     this.showDots = true;
     this.transition = new EventEmitter();
   }
 
-  ngOnInit() {
-  }
+  ngOnInit() {}
 
-  ngAfterContentInit(){
+  ngAfterContentInit() {
     this.translate();
   }
 
   ngOnChanges(s) {
-    if(s.selected) {
+    if (s.selected) {
       this.translate();
     }
   }
 
-  select(index:number) {
+  select(index: number) {
     if (index < this.carouselComponents.length) {
       this.selected = index;
       this.translate();
-    }
-    else {
-      console.warn('CarouselGroupComponent::select', 'out of boundaries', index, this.carouselComponents.length);
+    } else {
+      console.warn(
+        "CarouselGroupComponent::select",
+        "out of boundaries",
+        index,
+        this.carouselComponents.length
+      );
     }
   }
 
   translate() {
-    this.r.setStyle(this.sectionRef.nativeElement, 'transform', `translate(-${ this.selected * this.step }px)`);
+    this.r.setStyle(
+      this.sectionRef.nativeElement,
+      "transform",
+      `translate(-${this.selected * this.step}px)`
+    );
     this.transition.emit(this.selected);
   }
-
 }

@@ -1,8 +1,9 @@
+import { SessionService } from "./session.service";
+import { NotifierService } from "./notifier.service";
 import {
   Operation,
   ProjectBillingInfo,
   Repo,
-  TransferJob,
   Step,
   OperationType,
   Project,
@@ -12,52 +13,49 @@ import {
   SourceRepository,
   CloudFunction,
   BucketResource,
-  TransferJobStatus,
   Status,
   Role,
   GoogleServiceAccount,
-  IamPolicy
+  IamPolicy,
+  TransferJob,
+  TransferJobStatus,
+  TransferJobOperations,
+  TransferJobOperation,
+  Runnable,
+  OnSessionExpired
 } from "./gcp.types";
 import { Injectable } from "@angular/core";
-import { Subject } from "rxjs/Subject";
 import { MdSnackBar } from "@angular/material";
+import { Subject } from "rxjs/Subject";
 
 const BUCKET_NAME = "bucket";
 const CLOUD_FUNCTION_ENTRYPOINT = "agent";
+const TSV_FILE =
+  "https://raw.githubusercontent.com/actions-on-google-builder/app-builder/master/gcp-storage-transfer/actions-on-google-project-template.tsv";
 
 @Injectable()
-export class GcpService {
+export class GcpService implements Runnable, OnSessionExpired {
   onSessionExpired: Subject<boolean>;
   operationSteps: Step[];
+  notifier: NotifierService;
+  accessToken: string;
 
-  accessToken: {
-    google: string;
-  };
-
-  constructor(public snackBar: MdSnackBar) {
-    this.accessToken = {
-      google: null
-    };
-
+  constructor(public snackBar: MdSnackBar, public session: SessionService) {
+    this.notifier = new NotifierService(snackBar).registerService(this);
+    this.accessToken = null;
     this.onSessionExpired = new Subject();
-
-    this.initiliaze();
-  }
-
-  initiliaze() {
     this.resetOperations();
 
-    //@todo remove this
-    this.__skipSteps(
-      OperationType.CreatingProject,
-      OperationType.CheckingProjectAvailability
-    );
+    // setTimeout(_ => {
+    //   this.mirrorGithubRepoToCloudRepo("aaaaaazzzzzzzzzzzzeeeeeeeee");
+    // }, 2000);
   }
 
   resetOperations() {
     this.operationSteps = [
       // CreatingProject
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -67,6 +65,7 @@ export class GcpService {
       },
       // CheckingProjectAvailability
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -76,6 +75,7 @@ export class GcpService {
       },
       // CheckingBilling
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -85,6 +85,7 @@ export class GcpService {
       },
       // EnablingBilling
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -94,6 +95,7 @@ export class GcpService {
       },
       // CreatingCloudBucket
       {
+        enabled: false,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -103,24 +105,27 @@ export class GcpService {
       },
       // EnablePermissionsForGCPDataSink
       {
+        enabled: false,
         isValid: false,
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Granting write permissions for GCP Data Sink...`,
+        description: `Granting write permissions for bucket...`,
         description_2: `Granted write permissions for bucket.`
       },
       // UploadingProjectTemplate
       {
+        enabled: false,
         isValid: false,
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Uploading project template...`,
-        description_2: `Uploaded Project template to bucket.`
+        description: `Copying project template (may take up to 5min)...`,
+        description_2: `Copied Project template to bucket.`
       },
       // CreatingCloudRepository
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -130,6 +135,7 @@ export class GcpService {
       },
       // CheckingCloudFunctionPermissions
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -139,6 +145,7 @@ export class GcpService {
       },
       // EnablingCloudFunctionService
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -148,6 +155,7 @@ export class GcpService {
       },
       // CreatingCloudFunction
       {
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -156,6 +164,12 @@ export class GcpService {
         description_2: `Created Cloud Function.`
       }
     ];
+
+    // @todo remove this
+    this.__skipSteps(
+      OperationType.CreatingProject,
+      OperationType.CheckingProjectAvailability
+    );
   }
 
   __skipSteps(from, to = null) {
@@ -172,21 +186,20 @@ export class GcpService {
   }
 
   restoreToken() {
-    this.accessToken.google = localStorage.getItem("accessToken.google");
+    this.accessToken = localStorage.getItem("google.access-token");
   }
 
   resetToken() {
     this.setToken(null);
-    this.accessToken = {
-      google: null
-    };
   }
 
-  setToken(loginInfo) {
-    this.accessToken.google = loginInfo
-      ? loginInfo.credential.accessToken
-      : null;
-    localStorage.setItem("accessToken.google", this.accessToken.google);
+  setToken(accessToken) {
+    if (accessToken) {
+      this.accessToken = accessToken;
+      localStorage.setItem(`google.access-token`, this.accessToken);
+    } else {
+      localStorage.removeItem(`google.access-token`);
+    }
   }
 
   guard(operation: Operation): boolean {
@@ -204,9 +217,10 @@ export class GcpService {
    * 
    * @param projectId the project ID to create on the GCP
    */
-  async createProjects(projectId: string) {
-    if (this.accessToken.google) {
-      //** just for initialization purpose!
+  async run(projectId: string) {
+    if (this.accessToken) {
+      // just for initialization purpose.
+      // All objects must truthy!
       let createdPorject: Operation = { name: projectId };
       let checkedProject: Operation = { response: {} };
       let billingAccount: ProjectBillingInfo = {};
@@ -218,178 +232,233 @@ export class GcpService {
       let cloudFunctionOperation: Operation = {};
       let transferJobOperation: TransferJob = {};
       let dataSinkPermissions: IamPolicy = {};
-      //**//
+      // ---------------
 
-      if (this.shouldSkip(OperationType.CreatingProject)) {
-        this.notify(
-          OperationType.CreatingProject,
-          false,
-          true
-        );
-      } else {
-        createdPorject = await this.createCloudProject(projectId);
-        this.saveSession(OperationType.CreatingProject, createdPorject);
+      if (this.isOperationEnabled(OperationType.CreatingProject)) {
+        if (this.shouldSkip(OperationType.CreatingProject)) {
+          this.notifier.notify(OperationType.CreatingProject, false, true);
+        } else {
+          createdPorject = await this.createCloudProject(projectId);
+          this.session.saveOperation(
+            "google",
+            OperationType.CreatingProject,
+            createdPorject
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CheckingProjectAvailability)) {
-        this.notify(
-          OperationType.CheckingProjectAvailability,
-          false,
-          true
-        );
-      } else {
-        checkedProject =
-          this.guard(createdPorject) &&
-          (await this.checkProjectAvailability(createdPorject));
-        this.saveSession(
-          OperationType.CheckingProjectAvailability,
-          createdPorject
-        );
+      if (this.isOperationEnabled(OperationType.CheckingProjectAvailability)) {
+        if (this.shouldSkip(OperationType.CheckingProjectAvailability)) {
+          this.notifier.notify(
+            OperationType.CheckingProjectAvailability,
+            false,
+            true
+          );
+        } else {
+          checkedProject =
+            this.guard(createdPorject) &&
+            (await this.checkProjectAvailability(createdPorject));
+          this.session.saveOperation(
+            "google",
+            OperationType.CheckingProjectAvailability,
+            createdPorject
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CheckingBilling)) {
-        this.notify(
-          OperationType.CheckingBilling,
-          false,
-          true
-        );
-      } else {
-        billingAccount =
-          this.guard(checkedProject) && (await this.checkBilling());
-        this.saveSession(OperationType.CheckingBilling, billingAccount);
+      if (this.isOperationEnabled(OperationType.CheckingBilling)) {
+        if (this.shouldSkip(OperationType.CheckingBilling)) {
+          this.notifier.notify(OperationType.CheckingBilling, false, true);
+        } else {
+          billingAccount =
+            this.guard(checkedProject) && (await this.checkBilling());
+          this.session.saveOperation(
+            "google",
+            OperationType.CheckingBilling,
+            billingAccount
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.EnablingBilling)) {
-        this.notify(
-          OperationType.EnablingBilling,
-          false,
-          true
-        );
-      } else {
-        projectBillingInfo =
-          this.guard(billingAccount) &&
-          (await this.enablingBillingInfo(projectId, billingAccount));
-        this.saveSession(OperationType.EnablingBilling, projectBillingInfo);
+      if (this.isOperationEnabled(OperationType.EnablingBilling)) {
+        if (this.shouldSkip(OperationType.EnablingBilling)) {
+          this.notifier.notify(OperationType.EnablingBilling, false, true);
+        } else {
+          projectBillingInfo =
+            this.guard(billingAccount) &&
+            (await this.enablingBillingInfo(projectId, billingAccount));
+          this.session.saveOperation(
+            "google",
+            OperationType.EnablingBilling,
+            projectBillingInfo
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CreatingCloudBucket)) {
-        this.notify(
-          OperationType.CreatingCloudBucket,
-          false,
-          true
-        );
-      } else {
-        cloudBucketInfo =
-          this.guard(projectBillingInfo) &&
-          (await this.createCloudBucket(projectId));
-        this.saveSession(OperationType.CreatingCloudBucket, cloudBucketInfo);
+      if (this.isOperationEnabled(OperationType.CreatingCloudBucket)) {
+        if (this.shouldSkip(OperationType.CreatingCloudBucket)) {
+          this.notifier.notify(OperationType.CreatingCloudBucket, false, true);
+        } else {
+          cloudBucketInfo =
+            this.guard(projectBillingInfo) &&
+            (await this.createCloudBucket(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.CreatingCloudBucket,
+            cloudBucketInfo
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.EnablePermissionsForGCPDataSink)) {
-        this.notify(
-          OperationType.EnablePermissionsForGCPDataSink,
-          false,
-          true
-        );
-      } else {
-        dataSinkPermissions =
-          this.guard(cloudBucketInfo) &&
-          (await this.enablePermissionsForDataSink(projectId));
-        this.saveSession(
-          OperationType.EnablePermissionsForGCPDataSink,
-          dataSinkPermissions
-        );
+      if (
+        this.isOperationEnabled(OperationType.EnablePermissionsForGCPDataSink)
+      ) {
+        if (this.shouldSkip(OperationType.EnablePermissionsForGCPDataSink)) {
+          this.notifier.notify(
+            OperationType.EnablePermissionsForGCPDataSink,
+            false,
+            true
+          );
+        } else {
+          dataSinkPermissions =
+            this.guard(cloudBucketInfo) &&
+            (await this.enablePermissionsForDataSink(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.EnablePermissionsForGCPDataSink,
+            dataSinkPermissions
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.UploadingProjectTemplate)) {
-        this.notify(
-          OperationType.UploadingProjectTemplate,
-          false,
-          true
-        );
-      } else {
-        transferJobOperation =
-          this.guard(cloudBucketInfo) &&
-          (await this.createTransferJob(projectId));
-        this.saveSession(
-          OperationType.UploadingProjectTemplate,
-          transferJobOperation
-        );
+      if (this.isOperationEnabled(OperationType.UploadingProjectTemplate)) {
+        if (this.shouldSkip(OperationType.UploadingProjectTemplate)) {
+          this.notifier.notify(
+            OperationType.UploadingProjectTemplate,
+            false,
+            true
+          );
+        } else {
+          transferJobOperation =
+            this.guard(cloudBucketInfo) &&
+            (await this.createTransferJob(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.UploadingProjectTemplate,
+            transferJobOperation
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CreatingCloudRepository)) {
-        this.notify(
-          OperationType.CreatingCloudRepository,
-          false,
-          true
-        );
-      } else {
-        repoInfo =
-          this.guard(transferJobOperation) &&
-          (await this.createCloudRepository(projectId));
-        this.saveSession(OperationType.CreatingCloudRepository, repoInfo);
+      if (this.isOperationEnabled(OperationType.CreatingCloudRepository)) {
+        if (this.shouldSkip(OperationType.CreatingCloudRepository)) {
+          this.notifier.notify(
+            OperationType.CreatingCloudRepository,
+            false,
+            true
+          );
+        } else {
+          repoInfo =
+            this.guard(transferJobOperation) &&
+            (await this.createCloudRepository(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.CreatingCloudRepository,
+            repoInfo
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CheckingCloudFunctionPermissions)) {
-        this.notify(
-          OperationType.CheckingCloudFunctionPermissions,
-          false,
-          true
-        );
-      } else {
-        role =
-          this.guard(repoInfo) &&
-          (await this.checkCloudFunctionPermissions(projectId));
-        this.saveSession(OperationType.CheckingCloudFunctionPermissions, role);
+      if (
+        this.isOperationEnabled(OperationType.CheckingCloudFunctionPermissions)
+      ) {
+        if (this.shouldSkip(OperationType.CheckingCloudFunctionPermissions)) {
+          this.notifier.notify(
+            OperationType.CheckingCloudFunctionPermissions,
+            false,
+            true
+          );
+        } else {
+          role =
+            this.guard(repoInfo) &&
+            (await this.checkCloudFunctionPermissions(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.CheckingCloudFunctionPermissions,
+            role
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.EnablingCloudFunctionService)) {
-        this.notify(
-          OperationType.EnablingCloudFunctionService,
-          false,
-          true
-        );
-      } else {
-        cloudFunctionServiceOperation =
-          this.guard(role) &&
-          (await this.enableCloudFunctionService(projectId));
-        this.saveSession(
-          OperationType.EnablingCloudFunctionService,
-          cloudFunctionServiceOperation
-        );
+      if (this.isOperationEnabled(OperationType.EnablingCloudFunctionService)) {
+        if (this.shouldSkip(OperationType.EnablingCloudFunctionService)) {
+          this.notifier.notify(
+            OperationType.EnablingCloudFunctionService,
+            false,
+            true
+          );
+        } else {
+          cloudFunctionServiceOperation =
+            this.guard(role) &&
+            (await this.enableCloudFunctionService(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.EnablingCloudFunctionService,
+            cloudFunctionServiceOperation
+          );
+        }
       }
 
-      if (this.shouldSkip(OperationType.CreatingCloudFunction)) {
-        this.notify(
-          OperationType.CreatingCloudFunction,
-          false,
-          true
-        );
+      if (this.isOperationEnabled(OperationType.CreatingCloudFunction)) {
+        if (this.shouldSkip(OperationType.CreatingCloudFunction)) {
+          this.notifier.notify(
+            OperationType.CreatingCloudFunction,
+            false,
+            true
+          );
+        } else {
+          cloudFunctionOperation =
+            this.guard(cloudFunctionServiceOperation) &&
+            (await this.createCloudFunction(projectId));
+          this.session.saveOperation(
+            "google",
+            OperationType.CreatingCloudFunction,
+            cloudFunctionOperation
+          );
+        }
+      }
+
+      if (cloudFunctionOperation.done) {
+        return Promise.resolve();
       } else {
-        cloudFunctionOperation =
-          this.guard(cloudFunctionServiceOperation) &&
-          (await this.createCloudFunction(projectId));
-        this.saveSession(
-          OperationType.CreatingCloudFunction,
-          cloudFunctionOperation
-        );
+        return Promise.reject(false);
       }
     } else {
-      console.warn("Google Access Token is not set", this.accessToken.google);
-    }
 
-    return Promise.resolve(true);
+      console.warn("Google Access Token is not set", this.accessToken);
+      this.notifier.notify(null, false, false, {
+        message: "Your Google Cloud Platform account could not be linked."
+      });
+
+      return Promise.reject(false);
+    }
   }
 
   shouldSkip(operation: OperationType) {
-    const operationSteps = this.getSavedSession();
+    const operationSteps = this.session.restoreOperation("google");
     if (operationSteps[operation]) {
-      console.groupCollapsed("[RESTORING]", OperationType[operation]);
-      console.log(operationSteps[operation]);
-      console.groupEnd();
+      console.log(
+        "[RESTORING]",
+        OperationType[operation],
+        operationSteps[operation]
+      );
     }
 
     return this.operationSteps[operation].isValid;
+  }
+
+  isOperationEnabled(operation: OperationType) {
+    return this.operationSteps[operation].enabled;
   }
 
   /**
@@ -398,7 +467,7 @@ export class GcpService {
    * @param projectId the project ID to create on the GCP
    */
   async createCloudProject(projectId: string) {
-    this.notify(OperationType.CreatingProject, true, false);
+    this.notifier.notify(OperationType.CreatingProject, true, false);
 
     const createdPorject: Operation = await this.fetch(
       "https://cloudresourcemanager.googleapis.com/v1/projects",
@@ -417,16 +486,21 @@ export class GcpService {
     if (createdPorject.error) {
       // error
 
-      this.notify(
-        OperationType.CreatingProject,
-        false,
-        false,
-        createdPorject.error
-      );
+      const shouldBypassThisErrorAnyway = this.notifier.notify(
+          OperationType.CreatingProject,
+          false,
+          false,
+          createdPorject.error
+        );
+
+      if (shouldBypassThisErrorAnyway) {
+        createdPorject.error = null;
+      }
+
     } else if (createdPorject.name) {
       // success
 
-      this.notify(
+      this.notifier.notify(
         OperationType.CreatingProject,
         false,
         true,
@@ -447,7 +521,11 @@ export class GcpService {
    */
   async checkProjectAvailability(createdPorject: Operation) {
     return new Promise((resolve, reject) => {
-      this.notify(OperationType.CheckingProjectAvailability, true, false);
+      this.notifier.notify(
+        OperationType.CheckingProjectAvailability,
+        true,
+        false
+      );
 
       let projectAvailability = null;
       const stop = this.poll(async timer => {
@@ -458,27 +536,27 @@ export class GcpService {
           console.log(projectAvailability);
 
           if (projectAvailability.error) {
-            this.notify(
+            this.notifier.notify(
               OperationType.CheckingProjectAvailability,
               false,
               false,
               projectAvailability.error
             );
-            stop(timer);
+            stop();
             resolve(projectAvailability);
           } else if (projectAvailability.response) {
-            this.notify(
+            this.notifier.notify(
               OperationType.CheckingProjectAvailability,
               false,
               true,
               null,
               `Project "${createdPorject.name}" is ready.`
             );
-            stop(timer);
+            stop();
             resolve(projectAvailability);
           }
         } catch (e) {
-          stop(timer);
+          stop();
           reject(e);
         }
       });
@@ -489,7 +567,7 @@ export class GcpService {
    * Retrieve the user's billing account information.
    */
   async checkBilling(): Promise<ProjectBillingInfo> {
-    this.notify(OperationType.CheckingBilling, true, false);
+    this.notifier.notify(OperationType.CheckingBilling, true, false);
 
     const billingAccountsResponse: BillingAccounts = await this.fetch(
       `https://cloudbilling.googleapis.com/v1/billingAccounts`
@@ -505,7 +583,7 @@ export class GcpService {
           `https://cloudbilling.googleapis.com/v1/${account.name}`
         );
         if (info.open) {
-          this.notify(
+          this.notifier.notify(
             OperationType.CheckingBilling,
             false,
             true,
@@ -520,7 +598,7 @@ export class GcpService {
     } else {
       // error
 
-      this.notify(
+      this.notifier.notify(
         OperationType.CheckingBilling,
         false,
         false,
@@ -542,7 +620,7 @@ export class GcpService {
     projectId: string,
     billingAccountName: ProjectBillingInfo
   ): Promise<ProjectBillingInfo> {
-    this.notify(OperationType.EnablingBilling, true, false);
+    this.notifier.notify(OperationType.EnablingBilling, true, false);
 
     const projectBillingInfo: ProjectBillingInfo = await this.fetch(
       `https://cloudbilling.googleapis.com/v1/projects/${projectId}/billingInfo`,
@@ -555,7 +633,7 @@ export class GcpService {
     );
 
     if (projectBillingInfo.billingEnabled) {
-      this.notify(
+      this.notifier.notify(
         OperationType.EnablingBilling,
         false,
         true,
@@ -564,7 +642,7 @@ export class GcpService {
       );
       return projectBillingInfo;
     } else {
-      this.notify(OperationType.EnablingBilling, false, false, {
+      this.notifier.notify(OperationType.EnablingBilling, false, false, {
         message: `Could not enable billing for "${projectId}".`
       });
       return null;
@@ -572,7 +650,11 @@ export class GcpService {
   }
 
   async checkCloudFunctionPermissions(projectId: string): Promise<Role> {
-    this.notify(OperationType.CheckingCloudFunctionPermissions, true, false);
+    this.notifier.notify(
+      OperationType.CheckingCloudFunctionPermissions,
+      true,
+      false
+    );
 
     const roleInfo: Role = await this.fetch(
       `https://iam.googleapis.com/v1/projects/${projectId}/roles`,
@@ -588,7 +670,7 @@ export class GcpService {
       // exemple:
       // roleInfo.name: "projects/aaaaaazzzzzzzzzzzzeeeeeeeee/roles/cloudfunctions.functions.create"
       // roleInfo.etag: BwVWCkmWyrY=
-      this.notify(
+      this.notifier.notify(
         OperationType.CheckingCloudFunctionPermissions,
         false,
         true,
@@ -598,7 +680,7 @@ export class GcpService {
     } else {
       // error
 
-      this.notify(
+      this.notifier.notify(
         OperationType.CheckingCloudFunctionPermissions,
         false,
         false,
@@ -613,7 +695,11 @@ export class GcpService {
    * @notUsed
    */
   async undeleteRole(projectId: string): Promise<Role> {
-    this.notify(OperationType.CheckingCloudFunctionPermissions, true, false);
+    this.notifier.notify(
+      OperationType.CheckingCloudFunctionPermissions,
+      true,
+      false
+    );
 
     const role = "cloudfunctions.functions.create";
     const etag = "BwVWCkmWyrY=";
@@ -638,7 +724,11 @@ export class GcpService {
    */
   async enableCloudFunctionService(projectId) {
     return new Promise(async (resolve, reject) => {
-      this.notify(OperationType.EnablingCloudFunctionService, true, false);
+      this.notifier.notify(
+        OperationType.EnablingCloudFunctionService,
+        true,
+        false
+      );
 
       const enableOperation: Operation = await this.fetch(
         `https://servicemanagement.googleapis.com/v1/services/cloudfunctions.googleapis.com:enable`,
@@ -658,8 +748,8 @@ export class GcpService {
           );
 
           if (response.done) {
-            stop(timer);
-            this.notify(
+            stop();
+            this.notifier.notify(
               OperationType.EnablingCloudFunctionService,
               false,
               true,
@@ -667,8 +757,8 @@ export class GcpService {
             );
             resolve(response);
           } else if (response.error) {
-            stop(timer);
-            this.notify(
+            stop();
+            this.notifier.notify(
               OperationType.EnablingCloudFunctionService,
               false,
               false,
@@ -678,7 +768,7 @@ export class GcpService {
           }
         } catch (e) {
           reject(e);
-          stop(timer);
+          stop();
         }
       });
     });
@@ -691,7 +781,7 @@ export class GcpService {
    */
   async createCloudFunction(projectId) {
     return new Promise(async (resolve, reject) => {
-      this.notify(OperationType.CreatingCloudFunction, true, false);
+      this.notifier.notify(OperationType.CreatingCloudFunction, true, false);
 
       const locationId = `projects/${projectId}/locations/us-central1`;
       const entryPoint = CLOUD_FUNCTION_ENTRYPOINT;
@@ -716,7 +806,7 @@ export class GcpService {
       );
 
       if (operation.error) {
-        this.notify(
+        this.notifier.notify(
           OperationType.CreatingCloudFunction,
           false,
           false,
@@ -736,9 +826,9 @@ export class GcpService {
             if (response.error) {
               // error
 
-              stop(timer);
+              stop();
               resolve(response);
-              this.notify(
+              this.notifier.notify(
                 OperationType.CreatingCloudFunction,
                 false,
                 false,
@@ -747,9 +837,9 @@ export class GcpService {
             } else if (response.done) {
               // success
 
-              stop(timer);
+              stop();
               resolve(response);
-              this.notify(
+              this.notifier.notify(
                 OperationType.CreatingCloudFunction,
                 false,
                 false,
@@ -759,7 +849,7 @@ export class GcpService {
             }
           } catch (e) {
             reject(e);
-            stop(timer);
+            stop();
           }
         });
       }
@@ -767,7 +857,7 @@ export class GcpService {
   }
 
   async createCloudRepository(projectId: string) {
-    this.notify(OperationType.CreatingCloudRepository, true, false);
+    this.notifier.notify(OperationType.CreatingCloudRepository, true, false);
 
     const repoInfo: Repo = await this.fetch(
       `https://sourcerepo.googleapis.com/v1/projects/${projectId}/repos`,
@@ -785,7 +875,7 @@ export class GcpService {
     console.log(repoInfo);
 
     if (repoInfo.error) {
-      this.notify(
+      this.notifier.notify(
         OperationType.CreatingCloudRepository,
         false,
         false,
@@ -793,7 +883,7 @@ export class GcpService {
       );
     } else {
       // success
-      this.notify(
+      this.notifier.notify(
         OperationType.CreatingCloudRepository,
         false,
         true,
@@ -805,8 +895,28 @@ export class GcpService {
     return repoInfo;
   }
 
+  async mirrorGithubRepoToCloudRepo(projectId) {
+
+    const githubUrl = encodeURI("https://github.com/actions-on-google-builder/actions-on-google-project-template.git");
+    const cloudRepoName = "default";
+    
+    // document.cookie = "CONSENT=YES+FR.en+20160410-02-0; expires=Thu, 01 Jan 2222 00:00:00 GMT";
+
+    const syncInfo = await this.fetch(`https://console.cloud.google.com/m/clouddev/reposync/github/connect?pid=${projectId}&repoName=${cloudRepoName}&url=${ githubUrl }`, {
+      method: "POST",
+      // headers: {
+      //   "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+      // },
+      // credentials: "include", // send cookie
+      // body: {}
+      mode: "no-cors"
+    });
+    console.log(syncInfo);
+    
+  }
+
   async createCloudBucket(projectId: string) {
-    this.notify(OperationType.CreatingCloudBucket, true, false);
+    this.notifier.notify(OperationType.CreatingCloudBucket, true, false);
     const bucketInfo: BucketResource = await this.fetch(
       `https://www.googleapis.com/storage/v1/b?project=${projectId}`,
       {
@@ -819,14 +929,14 @@ export class GcpService {
     );
 
     if (bucketInfo.error) {
-      this.notify(
+      this.notifier.notify(
         OperationType.CreatingCloudBucket,
         false,
         false,
         bucketInfo.error
       );
     } else {
-      this.notify(
+      this.notifier.notify(
         OperationType.CreatingCloudBucket,
         false,
         true,
@@ -840,14 +950,23 @@ export class GcpService {
   }
 
   async enablePermissionsForDataSink(projectId: string) {
-    this.notify(OperationType.EnablePermissionsForGCPDataSink, true, false);
+    this.notifier.notify(
+      OperationType.EnablePermissionsForGCPDataSink,
+      true,
+      false
+    );
 
     const googleServiceAccounts: GoogleServiceAccount = await this.fetch(
       `https://storagetransfer.googleapis.com/v1/googleServiceAccounts/${projectId}`
     );
 
     if (googleServiceAccounts.error) {
-      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, false, googleServiceAccounts.error);
+      this.notifier.notify(
+        OperationType.EnablePermissionsForGCPDataSink,
+        false,
+        false,
+        googleServiceAccounts.error
+      );
       return null;
     }
 
@@ -872,23 +991,34 @@ export class GcpService {
     );
 
     if (iam.error) {
-      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, false, iam.error);
-    }
-    else {
-      this.notify(OperationType.EnablePermissionsForGCPDataSink, false, true, null, `Granted write permissions for "${projectId}".`);
+      this.notifier.notify(
+        OperationType.EnablePermissionsForGCPDataSink,
+        false,
+        false,
+        iam.error
+      );
+    } else {
+      this.notifier.notify(
+        OperationType.EnablePermissionsForGCPDataSink,
+        false,
+        true,
+        null,
+        `Granted write permissions for "${projectId}".`
+      );
     }
     return iam;
   }
 
-  //@wip
+  // @wip
   async createTransferJob(projectId: string) {
-    this.notify(OperationType.UploadingProjectTemplate, true, false);
+    this.notifier.notify(OperationType.UploadingProjectTemplate, true, false);
 
     return new Promise(async (resolve, reject) => {
+      const date = new Date();
       const scheduleDay = {
-        day: 6,
-        month: 8,
-        year: 2017
+        day: date.getDate(),
+        month: date.getMonth() + 1,
+        year: date.getFullYear()
       };
 
       const transferJob: TransferJob = await this.fetch(
@@ -896,7 +1026,8 @@ export class GcpService {
         {
           method: "POST",
           body: {
-            description: 'Transfer Actions on Google project template from Github',
+            description:
+              "Transfer Actions on Google project template from Github",
             status: TransferJobStatus[TransferJobStatus.ENABLED],
             projectId,
             schedule: {
@@ -905,8 +1036,7 @@ export class GcpService {
             },
             transferSpec: {
               httpDataSource: {
-                listUrl:
-                  "https://raw.githubusercontent.com/actions-on-google-builder/app-builder/master/gcp-storage-transfer/actions-on-google-project-template.tsv"
+                listUrl: TSV_FILE
               },
               gcsDataSink: {
                 bucketName: `${projectId}-${BUCKET_NAME}`
@@ -922,30 +1052,64 @@ export class GcpService {
 
       console.log(transferJob);
 
-      const args = encodeURIComponent(`{"projectId":"${projectId}"}`);
-      const transferJobStatus = await this.fetch(`https://storagetransfer.googleapis.com/v1/tranferOperations?filter=%7B"project_id":"aaaaaazzzzzzzzzzzzeeeeeeeee","job_id":%5B"transferJobs/00000000000000000000"%5D%7D`);
-
-      console.log(transferJob);
-
       if (transferJob.error) {
-        this.notify(
+        this.notifier.notify(
           OperationType.UploadingProjectTemplate,
           false,
           false,
           transferJob.error
         );
-      } else {
-        this.notify(OperationType.UploadingProjectTemplate, false, true, null, `Uploaded Project template to bucket "${projectId}-${BUCKET_NAME}".`);
       }
 
-      // let response;
-      // this.poll( async(timer) => {
+      let transferJobStatus: TransferJobOperations;
+      const stop = this.poll(
+        async timer => {
+          transferJobStatus = await this.fetch(
+            `https://storagetransfer.googleapis.com/v1/transferOperations?filter=%7B%22project_id%22%3A%22${projectId}%22%2C%22job_names%22%3A%5B%22${encodeURIComponent(
+              transferJob.name
+            )}%22%5D%7D`
+          );
+          console.log("transferJobStatus", transferJobStatus);
 
-      //   // https://storagetransfer.googleapis.com/v1/tranferOperations?filter=%7B"project_id":"PROJECT_ID","job_id":%5B"transferJobs/00000000000000000000"%5D%7D
+          if (
+            transferJobStatus.operations &&
+            transferJobStatus.operations.length > 0
+          ) {
+            const transferOp: TransferJobOperation =
+              transferJobStatus.operations[0];
+            if (transferOp.done === true) {
+              this.notifier.notify(
+                OperationType.UploadingProjectTemplate,
+                false,
+                true
+              );
+              stop();
+            } else if (transferOp.done === false) {
+              this.notifier.notify(
+                OperationType.UploadingProjectTemplate,
+                false,
+                false,
+                transferOp.error
+              );
+              stop();
+            }
+          }
+        },
+        300 /* 5min */,
+        () => {
+          // on timeout
+          this.notifier.notify(
+            OperationType.UploadingProjectTemplate,
+            false,
+            false,
+            {
+              status: "[TIMEOUT]"
+            }
+          );
+        }
+      );
 
-      // });
-
-      return transferJob;
+      return transferJobStatus;
     });
   }
 
@@ -954,7 +1118,7 @@ export class GcpService {
    * 
    * @param callback The code to be executed every 1 second
    */
-  poll(callback: Function, max = 3) {
+  poll(callback: Function, max = 20, timeoutCallback: Function = () => {}) {
     let timer = null;
     let count = 0;
     timer = setInterval(arg => {
@@ -966,71 +1130,12 @@ export class GcpService {
 
       if (count++ >= max) {
         clearInterval(timer);
+        timeoutCallback();
       }
     }, 1000);
-    return timer => {
+    return () => {
       clearInterval(timer);
     };
-  }
-
-  notify(
-    id: OperationType,
-    isWorking: boolean,
-    isValid: boolean,
-    error: Status = null,
-    description: string = null
-  ) {
-    let snackBar = null;
-    this.operationSteps[id].isDirty = true;
-    this.operationSteps[id].isWorking = isWorking;
-    this.operationSteps[id].isValid = isValid;
-
-    if (isValid) {
-      this.operationSteps[id].description = this.operationSteps[id].description_2
-    }
-
-    if (error) {
-      const errorMsg = `[${error.status}] ${error.message}`;
-      this.operationSteps[id].error = error.status || "ERROR";
-
-      if (
-        error &&
-        error.status &&
-        error.status.indexOf("UNAUTHENTICATED") !== -1
-      ) {
-        // handle the session expired case
-
-        snackBar = this.snackBar.open(
-          "Session expired. You need to link your account again.",
-          "CLOSE",
-          {
-            duration: 0
-          }
-        );
-        this.onSessionExpired.next(true);
-      } else {
-        snackBar = this.snackBar.open(error.message, "CLOSE", {
-          duration: 0
-        });
-      }
-    } else {
-      this.operationSteps[id].error = "";
-      if (snackBar) {
-        snackBar.afterDismissed().subscribe(() => {
-          this.resetOperations();
-        });
-      }
-    }
-  }
-
-  saveSession(operation: OperationType, entity: any) {
-    const ope = this.getSavedSession();
-    ope[operation] = entity;
-    localStorage.setItem("operationSteps", JSON.stringify(ope));
-  }
-
-  getSavedSession(): { [key: string]: string } {
-    return JSON.parse(localStorage.getItem("operationSteps") || "{}");
   }
 
   isAllOperationsOK() {
@@ -1038,22 +1143,33 @@ export class GcpService {
   }
 
   async fetch(url, opts = {} as any): Promise<{ [key: string]: string }> {
-    console.info("[REQUESTING]", url);
-    console.info(opts);
 
-    if (opts.body) {
-      opts.body = JSON.stringify(opts.body);
+    if (this.accessToken) {
+
+      console.info("[REQUESTING]", url);
+      console.info(opts);
+
+      if (opts.body) {
+        opts.body = JSON.stringify(opts.body);
+      }
+
+      opts.headers = opts.headers || {};
+      opts.headers["Authorization"] = `Bearer ${this.accessToken}`;
+      opts.headers["Content-Type"] = opts.headers["Content-Type"] || "application/json";
+
+      // url = `${url}&access_token=${this.accessToken}`;
+
+      const f = await fetch(url, opts);
+      const json = await f.json();
+      console.info(json);
+
+      return json;
+
+    }
+    else {
+      this.notifier.notify(null, false, false, {status: "UNAUTHENTICATED"});
+      return null;
     }
 
-    opts.headers = {
-      Authorization: `Bearer ${this.accessToken.google}`,
-      "Content-Type": "application/json"
-    };
-
-    const f = await fetch(url, opts);
-    const json = await f.json();
-    console.info(json);
-
-    return json;
   }
 }
