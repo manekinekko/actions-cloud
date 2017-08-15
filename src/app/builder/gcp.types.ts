@@ -1,3 +1,4 @@
+import { Subject } from "rxjs/Subject";
 // NOTE: order is important!
 export enum OperationType {
   CreatingProject,
@@ -41,7 +42,16 @@ export enum TransferJobStatus {
   STATUS_UNSPECIFIED,
   ENABLED,
   DISABLED,
-  DELETED
+  DELETED,
+  IN_PROGRESS
+}
+
+export interface OnSessionExpired {
+  onSessionExpired: Subject<boolean>;
+}
+export interface Runnable {
+  run(projectId?: string): Promise<void>;
+  fetch(url, opts?: any): Promise<{ [key: string]: string }>;
 }
 
 export interface ErrorStatus {
@@ -98,6 +108,7 @@ export interface MirrorConfig {
 
 export interface Operation extends ErrorStatus {
   name?: string;
+  message?: string;
   metadata?: {
     "@type"?: string;
   };
@@ -140,6 +151,13 @@ export interface TransferSpec {
   gcsDataSink?: {
     bucketName?: string;
   };
+  counters?: TransferJobCounters;
+  status?: string;
+}
+
+export interface TransferJobCounters {
+  bytesFoundFromSource?: number;
+  objectsFoundFromSource?: number;
 }
 
 export interface Status {
@@ -170,9 +188,11 @@ export interface ResourceId {
 }
 
 export interface Step {
+  enabled?: boolean;
   isValid?: boolean;
   isDirty?: boolean;
   isWorking?: boolean;
+  isSkipped?: boolean;
   description?: string;
   description_2?: string;
   error?: string;
@@ -231,11 +251,27 @@ export interface GoogleServiceAccount extends ErrorStatus {
 }
 
 export interface IamPolicy extends ErrorStatus {
-  kind?: string; //storage#policy,
+  kind?: string; // storage#policy,
   resourceId?: string;
   bindings?: {
     role?: string;
     members?: string[];
   }[];
   etag?: string;
+}
+
+export interface TransferJobOperations extends ErrorStatus {
+  operations?: TransferJobOperation[];
+}
+export interface TransferJobOperation extends Operation {
+  name?: string;
+  metadata?: {
+    "@type"?: string; // type.googleapis.com/google.storagetransfer.v1.TransferOperation
+    name?: string;
+    projectId: string;
+    transferSpec?: TransferSpec;
+    response?: {
+      "@type"?: string; // type.googleapis.com/google.protobuf.Empty
+    };
+  };
 }

@@ -1,57 +1,81 @@
-import { environment } from './../../../environments/environment.prod';
-import { GcpService } from './../gcp.service';
+import { SessionService } from "./../session.service";
+import { GithubService } from "./../github.service";
+import { environment } from "./../../../environments/environment.prod";
+import { GcpService } from "./../gcp.service";
 import { Component, OnInit } from "@angular/core";
-import { Observable } from "rxjs/Observable";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
 
-import * as generate from 'project-name-generator';
+import * as generate from "project-name-generator";
+
+export enum Providers {
+  GOOGLE = "GOOGLE",
+  GITHUB = "GITHUB"
+}
 
 @Component({
   selector: "app-builder",
   templateUrl: "./builder.component.html",
   styleUrls: ["./builder.component.css"]
 })
-export class BuilderComponent {
-  user: firebase.User;
+export class BuilderComponent implements OnInit {
+  user: {
+    google: any;
+    github: any;
+  };
   showDots: boolean;
   selectedCarousel: number;
   projectId: string;
-  scopes: {uri: string; description: string}[];
+  scopes: {
+    google: { name: string; description: string }[];
+    github: { name: string; description: string }[];
+  };
 
   constructor(
     public afAuth: AngularFireAuth,
-    public gcp: GcpService
+    public gcp: GcpService,
+    public github: GithubService,
+    public session: SessionService
   ) {
-    
+
     this.scopes = environment.scopes;
-
-    afAuth.authState.subscribe(user => {
-      this.user = user;
-
-      if (!user) {
-        this.welcomeScreen();
-      }
-    });
+    this.user = {
+      google: null,
+      github: null
+    };
   }
 
   ngOnInit() {
-    this.projectId = 'aaaaaazzzzzzzzzzzzeeeeeeeee';
+    this.projectId = "aaaaaazzzzzzzzzzzzeeeeeeeee";
     this.gcp.restoreToken();
-    this.gcp.onSessionExpired.subscribe( async(_) => {
-      this.gcp.initiliaze();      
-      await this.logout();
+    this.github.restoreToken();
+
+    this.github.shouldRestore();
+
+    this.user.google = this.session.getUserInfo("google");
+    this.user.github = this.session.getUserInfo("github");
+
+    this.gcp.onSessionExpired.subscribe(async _ => {
+      this.gcp.resetOperations();
+      this.gcp.resetToken();
+      this.next(3);
+    });
+
+    this.github.onSessionExpired.subscribe(async _ => {
+      this.github.resetOperations();
+      this.github.resetToken();
       this.next(1);
     });
+
     const storedIndex = parseInt(
-      localStorage.getItem("ui.selectedCarousel"),
+      localStorage.getItem("ui.selected-carousel") || "0",
       10
     );
-    this.next(storedIndex);
 
     if (storedIndex > 0) {
       this.showDots = true;
     }
+    this.next(storedIndex);
   }
 
   randomProjectId() {
@@ -64,6 +88,7 @@ export class BuilderComponent {
     this.showDots = false;
     // this.projectId = "";
     this.gcp.resetToken();
+    this.github.resetToken();
     this.next(0);
   }
 
@@ -74,30 +99,67 @@ export class BuilderComponent {
 
   next(index: number) {
     this.selectedCarousel = index;
-    localStorage.setItem("ui.selectedCarousel", `${this.selectedCarousel}`);
   }
 
-  async create() {
-    const operation = await this.gcp.createProjects(this.projectId);
+  async forkGithubProject() {
+    const operation = await this.github.run();
   }
 
-  async login() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    this.scopes.forEach(scope => provider.addScope(scope.uri));
-    const loginInfo = await this.afAuth.auth.signInWithPopup(provider);
-    this.gcp.setToken(loginInfo);
+  async createGCPProjects() {
+    const operation = await this.gcp.run(this.projectId);
   }
 
-  async logout() {
+  async link(withProvider) {
+    switch (withProvider) {
+      case Providers.GOOGLE:
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        this.scopes.google.forEach(scope =>
+          googleProvider.addScope(scope.name)
+        );
+        const google = await this.afAuth.auth.signInWithPopup(googleProvider);
+        this.user.google = google.additionalUserInfo.profile;
+
+        this.session.setUserInfo("google", this.user.google);
+        this.gcp.setToken(google.credential.accessToken);
+        console.log(google);
+        break;
+
+      case Providers.GITHUB:
+        const githubProvider = new firebase.auth.GithubAuthProvider();
+        this.scopes.github.forEach(scope =>
+          githubProvider.addScope(scope.name)
+        );
+        const github = await this.afAuth.auth.signInWithPopup(githubProvider);
+        this.user.github = github.additionalUserInfo.profile;
+
+        this.session.setUserInfo("github", this.user.github);
+        this.github.setToken(github.credential.accessToken);
+        console.log(github);
+        break;
+    }
+  }
+
+  async unlink(withProvider: string) {
     await this.afAuth.auth.signOut();
-    this.gcp.resetToken();
+
+    switch (withProvider) {
+      case Providers.GOOGLE:
+        this.user.google = null;
+        this.session.setUserInfo("google", null);
+        break;
+
+      case Providers.GITHUB:
+        this.user.github = null;
+        this.session.setUserInfo("github", null);
+        break;
+    }
   }
 
   onTransition(index) {
     this.selectedCarousel = index;
+    localStorage.setItem("ui.selected-carousel", `${this.selectedCarousel}`);
     if (index === 0) {
       this.showDots = false;
     }
   }
-
 }

@@ -1,7 +1,7 @@
 :host {
     display: block;
     width: 100%;
-    margin: 20px auto;
+    padding-top: 56px;
 }
 
 @media (max-width: 600px) {
@@ -13,14 +13,26 @@
 }
 
 .header-image {
-    background-image: url('https://developers.google.com/actions/assistant.png');
+    background-image: url('/assets/assistant.png');
     background-size: contain;
+}
+
+.header-image.aog {
+    background-image: url('/assets/gcp.png');
+}
+
+.header-image.github {
+    background-image: url('/assets/github.png');
 }
 
 .header-image img {
     width: 45px;
     border-radius: 50%;
     margin-left: -5px;
+}
+
+.permissions li {
+    padding: 6px;
 }
 
 .align-center {
@@ -43,6 +55,10 @@ md-icon[md-list-icon] {
 span.error-message,
 md-icon[md-list-icon].error-message {
     color: #F44336;
+}
+
+.skipped-message {
+    color: orange;
 }
 
 md-progress-spinner {
