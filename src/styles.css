@@ -97,3 +97,14 @@ p {
 footer.page-footer {
     margin: 0;
 }
+
+div.container {
+    visibility: visible !important;
+}
+
+.fallback {
+    display: block;
+    min-height: 500px;
+    background: url(/assets/parallax/background1.png) no-repeat;
+    background-size: cover;
+}
