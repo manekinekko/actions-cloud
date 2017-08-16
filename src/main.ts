@@ -25,5 +25,9 @@ if (environment.production) {
   // make sure to call this AFTER angular bootstraps!
   // tell Firebase not to store the auth info, we'll take care of that.
   // await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+
   
 })();
+
+console.log(`%cYou can reach out to me on twitter @manekinekko if you need an "alpha access".\nhttps://twitter.com/@manekinekko`, `padding:2px; color:white; background-color:#FB7073; border-radius:3px; text-shadow: 1px 0px 1px black; `);
+console.log(`\n\n\n\n`);
