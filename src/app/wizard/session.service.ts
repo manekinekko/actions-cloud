@@ -6,6 +6,19 @@ export class SessionService {
 
   constructor() { }
 
+  getAccessToken(key) {
+    return localStorage.getItem(`${key}.access-token`);
+  }
+
+  setAccessToken(key, value) {
+    if (value === null) {
+      localStorage.removeItem(`${key}.access-token`);
+    }
+    else {
+      localStorage.setItem(`${key}.access-token`, value);
+    }
+  }
+
   setUserInfo(key: string, entity?: any) {
     if (entity) {
       localStorage.setItem(`${key}.user-info`, JSON.stringify(entity));
@@ -16,7 +29,13 @@ export class SessionService {
   }
 
   getUserInfo(key: string) {
-    return JSON.parse(localStorage.getItem(`${key}.user-info`));
+    if (this.getAccessToken(key)) {
+      return JSON.parse(localStorage.getItem(`${key}.user-info`));
+    }
+    else {
+      localStorage.removeItem(`${key}.user-info`);
+      return null;
+    }
   }
 
   saveOperation(key: string, operation: OperationType, entity: any) {

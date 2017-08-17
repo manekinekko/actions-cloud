@@ -46,27 +46,32 @@ export class WizardComponent implements OnInit {
   }
 
   ngOnInit() {
+
     this.projectId = "aaaaaazzzzzzzzzzzzeeeeeeeee";
+
     this.gcp.restoreToken();
     this.github.restoreToken();
 
-    this.github.shouldRestore();
+    this.github.shouldRestoreOperations();
 
     this.user.google = this.session.getUserInfo("google");
     this.user.github = this.session.getUserInfo("github");
 
     this.gcp.onSessionExpired.subscribe(async _ => {
+      this.user.google = null;
       this.gcp.resetOperations();
       this.gcp.resetToken();
       this.next(3);
     });
 
     this.github.onSessionExpired.subscribe(async _ => {
+      this.user.github = null;
       this.github.resetOperations();
       this.github.resetToken();
       this.next(1);
     });
 
+    // restore carousel index
     const storedIndex = parseInt(
       localStorage.getItem("ui.selected-carousel") || "0",
       10

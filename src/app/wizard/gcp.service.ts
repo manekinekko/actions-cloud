@@ -40,7 +40,9 @@ export class GcpService implements Runnable, OnSessionExpired {
   notifier: NotifierService;
   accessToken: string;
 
-  constructor(public snackBar: MdSnackBar, public session: SessionService) {
+  constructor(
+    public snackBar: MdSnackBar, 
+    public session: SessionService) {
     this.notifier = new NotifierService(snackBar).registerService(this);
     this.accessToken = null;
     this.onSessionExpired = new Subject();
@@ -186,7 +188,7 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   restoreToken() {
-    this.accessToken = localStorage.getItem("google.access-token");
+    this.accessToken = this.session.getAccessToken("google");
   }
 
   resetToken() {
@@ -196,10 +198,8 @@ export class GcpService implements Runnable, OnSessionExpired {
   setToken(accessToken) {
     if (accessToken) {
       this.accessToken = accessToken;
-      localStorage.setItem(`google.access-token`, this.accessToken);
-    } else {
-      localStorage.removeItem(`google.access-token`);
     }
+    this.session.setAccessToken("google", accessToken);
   }
 
   guard(operation: Operation): boolean {
@@ -213,222 +213,56 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   /**
+   * Just a macro that runs the same logic but with different methods from this class
+   * 
+   * @param operationName The function name to invoke on this class
+   * @param lastOperation last operation if any, null otherwise
+   * @param operationType An operation type
+   */
+  async runMacro(logic: Function, lastOperation: {}, operationType: OperationType) {
+    let operation = null;
+    if (this.isOperationEnabled(operationType)) {
+      if (this.shouldSkip(operationType)) {
+        this.notifier.notify(operationType, false, true);
+      } else {
+
+        if (lastOperation) {
+          operation = this.guard(lastOperation) && (await logic());
+        }
+        else {
+          operation = await logic();
+        }
+
+        if (operation.error) {
+          return Promise.reject(operation.error);
+        }
+        this.session.saveOperation("google", operationType, operation);
+      }
+    }
+    return operation;
+  }
+
+  /**
    * Start the creating process of the new project
    * 
    * @param projectId the project ID to create on the GCP
    */
   async run(projectId: string) {
     if (this.accessToken) {
-      // just for initialization purpose.
-      // All objects must truthy!
-      let createdPorject: Operation = { name: projectId };
-      let checkedProject: Operation = { response: {} };
-      let billingAccount: ProjectBillingInfo = {};
-      let repoInfo: Repo = {};
-      let cloudBucketInfo: Operation = {};
-      let projectBillingInfo: ProjectBillingInfo = {};
-      let role: Role = {};
-      let cloudFunctionServiceOperation: Operation = {};
-      let cloudFunctionOperation: Operation = {};
-      let transferJobOperation: TransferJob = {};
-      let dataSinkPermissions: IamPolicy = {};
-      // ---------------
-
-      if (this.isOperationEnabled(OperationType.CreatingProject)) {
-        if (this.shouldSkip(OperationType.CreatingProject)) {
-          this.notifier.notify(OperationType.CreatingProject, false, true);
-        } else {
-          createdPorject = await this.createCloudProject(projectId);
-          this.session.saveOperation(
-            "google",
-            OperationType.CreatingProject,
-            createdPorject
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.CheckingProjectAvailability)) {
-        if (this.shouldSkip(OperationType.CheckingProjectAvailability)) {
-          this.notifier.notify(
-            OperationType.CheckingProjectAvailability,
-            false,
-            true
-          );
-        } else {
-          checkedProject =
-            this.guard(createdPorject) &&
-            (await this.checkProjectAvailability(createdPorject));
-          this.session.saveOperation(
-            "google",
-            OperationType.CheckingProjectAvailability,
-            createdPorject
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.CheckingBilling)) {
-        if (this.shouldSkip(OperationType.CheckingBilling)) {
-          this.notifier.notify(OperationType.CheckingBilling, false, true);
-        } else {
-          billingAccount =
-            this.guard(checkedProject) && (await this.checkBilling());
-          this.session.saveOperation(
-            "google",
-            OperationType.CheckingBilling,
-            billingAccount
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.EnablingBilling)) {
-        if (this.shouldSkip(OperationType.EnablingBilling)) {
-          this.notifier.notify(OperationType.EnablingBilling, false, true);
-        } else {
-          projectBillingInfo =
-            this.guard(billingAccount) &&
-            (await this.enablingBillingInfo(projectId, billingAccount));
-          this.session.saveOperation(
-            "google",
-            OperationType.EnablingBilling,
-            projectBillingInfo
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.CreatingCloudBucket)) {
-        if (this.shouldSkip(OperationType.CreatingCloudBucket)) {
-          this.notifier.notify(OperationType.CreatingCloudBucket, false, true);
-        } else {
-          cloudBucketInfo =
-            this.guard(projectBillingInfo) &&
-            (await this.createCloudBucket(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.CreatingCloudBucket,
-            cloudBucketInfo
-          );
-        }
-      }
-
-      if (
-        this.isOperationEnabled(OperationType.EnablePermissionsForGCPDataSink)
-      ) {
-        if (this.shouldSkip(OperationType.EnablePermissionsForGCPDataSink)) {
-          this.notifier.notify(
-            OperationType.EnablePermissionsForGCPDataSink,
-            false,
-            true
-          );
-        } else {
-          dataSinkPermissions =
-            this.guard(cloudBucketInfo) &&
-            (await this.enablePermissionsForDataSink(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.EnablePermissionsForGCPDataSink,
-            dataSinkPermissions
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.UploadingProjectTemplate)) {
-        if (this.shouldSkip(OperationType.UploadingProjectTemplate)) {
-          this.notifier.notify(
-            OperationType.UploadingProjectTemplate,
-            false,
-            true
-          );
-        } else {
-          transferJobOperation =
-            this.guard(cloudBucketInfo) &&
-            (await this.createTransferJob(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.UploadingProjectTemplate,
-            transferJobOperation
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.CreatingCloudRepository)) {
-        if (this.shouldSkip(OperationType.CreatingCloudRepository)) {
-          this.notifier.notify(
-            OperationType.CreatingCloudRepository,
-            false,
-            true
-          );
-        } else {
-          repoInfo =
-            this.guard(transferJobOperation) &&
-            (await this.createCloudRepository(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.CreatingCloudRepository,
-            repoInfo
-          );
-        }
-      }
-
-      if (
-        this.isOperationEnabled(OperationType.CheckingCloudFunctionPermissions)
-      ) {
-        if (this.shouldSkip(OperationType.CheckingCloudFunctionPermissions)) {
-          this.notifier.notify(
-            OperationType.CheckingCloudFunctionPermissions,
-            false,
-            true
-          );
-        } else {
-          role =
-            this.guard(repoInfo) &&
-            (await this.checkCloudFunctionPermissions(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.CheckingCloudFunctionPermissions,
-            role
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.EnablingCloudFunctionService)) {
-        if (this.shouldSkip(OperationType.EnablingCloudFunctionService)) {
-          this.notifier.notify(
-            OperationType.EnablingCloudFunctionService,
-            false,
-            true
-          );
-        } else {
-          cloudFunctionServiceOperation =
-            this.guard(role) &&
-            (await this.enableCloudFunctionService(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.EnablingCloudFunctionService,
-            cloudFunctionServiceOperation
-          );
-        }
-      }
-
-      if (this.isOperationEnabled(OperationType.CreatingCloudFunction)) {
-        if (this.shouldSkip(OperationType.CreatingCloudFunction)) {
-          this.notifier.notify(
-            OperationType.CreatingCloudFunction,
-            false,
-            true
-          );
-        } else {
-          cloudFunctionOperation =
-            this.guard(cloudFunctionServiceOperation) &&
-            (await this.createCloudFunction(projectId));
-          this.session.saveOperation(
-            "google",
-            OperationType.CreatingCloudFunction,
-            cloudFunctionOperation
-          );
-        }
-      }
-
-      if (cloudFunctionOperation.done) {
+      let lastOperation = null;
+      lastOperation = await this.runMacro( async () => await this.createCloudProject(projectId),                  lastOperation,  OperationType.CreatingProject);
+      lastOperation = await this.runMacro( async () => await this.checkProjectAvailability(lastOperation),        lastOperation,  OperationType.CheckingProjectAvailability);
+      lastOperation = await this.runMacro( async () => await this.checkBilling(),                                 lastOperation,  OperationType.CheckingBilling);
+      lastOperation = await this.runMacro( async () => await this.enablingBillingInfo(projectId, lastOperation),  lastOperation,  OperationType.EnablingBilling);
+      lastOperation = await this.runMacro( async () => await this.createCloudBucket(projectId),                   lastOperation,  OperationType.CreatingCloudBucket);
+      lastOperation = await this.runMacro( async () => await this.enablePermissionsForDataSink(projectId),        lastOperation,  OperationType.EnablePermissionsForGCPDataSink);
+      lastOperation = await this.runMacro( async () => await this.createTransferJob(projectId),                   lastOperation,  OperationType.UploadingProjectTemplate);
+      lastOperation = await this.runMacro( async () => await this.createCloudRepository(projectId),               lastOperation,  OperationType.CreatingCloudRepository);
+      lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
+      lastOperation = await this.runMacro( async () => await this.enableCloudFunctionService(projectId),          lastOperation,  OperationType.EnablingCloudFunctionService);
+      lastOperation = await this.runMacro( async () => await this.createCloudFunction(projectId),                 lastOperation,  OperationType.CreatingCloudFunction);
+      
+      if (lastOperation.done) {
         return Promise.resolve();
       } else {
         return Promise.reject(false);
@@ -486,16 +320,12 @@ export class GcpService implements Runnable, OnSessionExpired {
     if (createdPorject.error) {
       // error
 
-      const shouldBypassThisErrorAnyway = this.notifier.notify(
+      this.notifier.notify(
           OperationType.CreatingProject,
           false,
           false,
           createdPorject.error
         );
-
-      if (shouldBypassThisErrorAnyway) {
-        createdPorject.error = null;
-      }
 
     } else if (createdPorject.name) {
       // success

@@ -62,7 +62,7 @@ export class GithubService implements Runnable, OnSessionExpired {
   }
 
   // retore all valid operation from localStorage
-  shouldRestore() {
+  shouldRestoreOperations() {
     const storedOperationSteps = this.session.restoreOperation("github") as {
       [key: string]: Operation;
     }[];

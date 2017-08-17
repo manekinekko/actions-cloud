@@ -49,13 +49,14 @@ export class NotifierService {
       if (error) {
 
         if (error.status.indexOf("ALREADY_EXISTS") !== -1) {
-          // skip resources that already exist
+          // @todo: should we skip resources that already exist?
 
-          if (operationType !== null) {
-            this.service.operationSteps[operationType].isSkipped = true;
-            this.service.operationSteps[operationType].error = "";
-          }
-          return true;
+          // if (operationType !== null) {
+          //   this.service.operationSteps[operationType].isSkipped = true;
+          //   this.service.operationSteps[operationType].error = "";
+          // }
+          
+          return false;
           
         }
         else if (
