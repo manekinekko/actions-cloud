@@ -12,6 +12,8 @@ import { WizardComponent } from "./wizard/wizard.component";
 import { AngularFireAuthModule } from "angularfire2/auth";
 import { FormsModule } from "@angular/forms";
 import { GithubService } from "./github.service";
+import { BetaAccessService } from "../beta-access.service";
+import { AngularFireDatabaseModule } from "angularfire2/database";
 
 @NgModule({
   imports: [
@@ -20,10 +22,11 @@ import { GithubService } from "./github.service";
     MatModule,
     CarouselModule,
     AngularFireModule.initializeApp(environment.firebase),
-    AngularFireAuthModule
+    AngularFireAuthModule,
+    AngularFireDatabaseModule
   ],
   declarations: [WizardComponent],
   exports: [WizardComponent],
-  providers: [GcpService, GithubService, NotifierService, SessionService]
+  providers: [GcpService, GithubService, NotifierService, SessionService, BetaAccessService]
 })
 export class WizardModule { }

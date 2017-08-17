@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SessionService } from "../wizard/session.service";
 
 @Component({
   selector: 'app-welcome',
@@ -6,10 +7,23 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./welcome.component.css']
 })
 export class WelcomeComponent implements OnInit {
+  
+  hasBetaAccessCode: boolean;
 
-  constructor() { }
+  constructor(
+    public session: SessionService
+  ) {
+    this.hasBetaAccessCode = false;
+  }
 
-  ngOnInit() {
+  async ngOnInit() {
+    window.addEventListener('storage', e => {
+      this.checkBetaAccess();
+    });
+  }
+
+  async checkBetaAccess() {
+    this.hasBetaAccessCode = await this.session.checkBetaAccess();
   }
 
 }

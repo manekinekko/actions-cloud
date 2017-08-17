@@ -48,7 +48,7 @@ export class NotifierService {
 
       if (error) {
 
-        if (error.status.indexOf("ALREADY_EXISTS") !== -1) {
+        if (error.status && error.status.indexOf("ALREADY_EXISTS") !== -1) {
           // @todo: should we skip resources that already exist?
 
           // if (operationType !== null) {
