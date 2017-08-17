@@ -1,3 +1,4 @@
+import { RouterModule } from '@angular/router';
 import { SessionService } from "./session.service";
 import { NotifierService } from "./notifier.service";
 import { GcpService } from "./gcp.service";
@@ -7,7 +8,7 @@ import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AngularFireModule } from "angularfire2";
 import { environment } from "./../../environments/environment.prod";
-import { BuilderComponent } from "./builder/builder.component";
+import { WizardComponent } from "./wizard/wizard.component";
 import { AngularFireAuthModule } from "angularfire2/auth";
 import { FormsModule } from "@angular/forms";
 import { GithubService } from "./github.service";
@@ -21,8 +22,8 @@ import { GithubService } from "./github.service";
     AngularFireModule.initializeApp(environment.firebase),
     AngularFireAuthModule
   ],
-  declarations: [BuilderComponent],
-  exports: [BuilderComponent],
+  declarations: [WizardComponent],
+  exports: [WizardComponent],
   providers: [GcpService, GithubService, NotifierService, SessionService]
 })
-export class BuilderModule { }
+export class WizardModule { }

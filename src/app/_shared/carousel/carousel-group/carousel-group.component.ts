@@ -63,10 +63,10 @@ import {
       padding: 10px 1px;
     }
     :host li.selected span {
-      background: rgba(89, 157, 240, 1);
+      background: rgb(251, 162, 102);
     }
     :host li span {
-      background: rgba(89, 157, 240, 0.5);
+      background: rgba(251, 162, 102, 0.48);
       width: 10px;
       height: 10px;
       border-radius: 50%;

@@ -114,7 +114,7 @@ export class GithubService implements Runnable, OnSessionExpired {
     this.notifier.notify(0, true, false);
 
     const fork: Operation = await this.fetch(
-      `https://api.github.com/repos/actions-on-google-builder/actions-on-google-project-template/forks`,
+      `https://api.github.com/repos/actions-on-google-wizard/actions-on-google-project-template-gcp/forks`,
       {
         method: "POST"
       }
@@ -147,7 +147,7 @@ export class GithubService implements Runnable, OnSessionExpired {
       Authorization: `Bearer ${this.accessToken}`,
       "Content-Type": "application/json",
       Accept: "application/vnd.github.v3+json",
-      "User-Agent": "Actions-on-Google-Builder (by manekinekko)"
+      "User-Agent": "Actions-on-Google-Wizard (by manekinekko)"
     };
 
     const f = await fetch(url, opts);

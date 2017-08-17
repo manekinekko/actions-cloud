@@ -6,7 +6,7 @@
         <md-card class="card">
             <md-card-header>
                 <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Builder</md-card-title>
+                <md-card-title>Actions on Goolge Wizard</md-card-title>
                 <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
             </md-card-header>
             <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
@@ -52,7 +52,7 @@
                 </ul>
             </md-card-content>
             <md-card-actions>
-                <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-builder">CREATE A FREE ACCOUNT</a>
+                <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a>
                 <button *ngIf="!user.github; else linkedGithubRef" color="primary" md-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
                 <ng-template #linkedGithubRef>
                     <button color="warn" md-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
@@ -95,6 +95,7 @@
                             </md-list-item>
 
                         </md-list>
+                        <br>
                         <md-divider></md-divider>
                     </p>
                 </form>
@@ -170,13 +171,10 @@
             <md-card-content>
 
                 <form #form="ngForm">
-                    <p>
-                        <md-input-container>
-                            <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" type="text" mdInput placeholder="Enter your project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6">
-                            <md-icon *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" mdSuffix style="cursor: pointer;">autorenew</md-icon>
-                            <md-hint>Must be 6-30 lowercase letters, digits or hyphens, start with a letter and have no trailing hyphen.</md-hint>
-                        </md-input-container>
-                    </p>
+                    <div class="input-field col s6">
+                        <md-icon class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</md-icon>
+                        <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter your project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
+                    </div>
                     <p>
                         <md-list dense>
                             <h3 md-subheader>Applying operations</h3>
@@ -197,6 +195,7 @@
                             </ng-template>
 
                         </md-list>
+                        <br>
                         <md-divider></md-divider>
                     </p>
                 </form>
@@ -217,7 +216,7 @@
         <md-card class="card">
             <md-card-header>
                 <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Builder</md-card-title>
+                <md-card-title>Actions on Goolge Wizard</md-card-title>
                 <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
             </md-card-header>
             <img md-card-image src="https://camo.githubusercontent.com/3feaf771c4b0ddf1dea041976d5f11d0bc518545/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f323030302f312a35312d51636a646a6c526979345f7961324e6a4132672e706e67">

@@ -31,7 +31,7 @@ import { Subject } from "rxjs/Subject";
 const BUCKET_NAME = "bucket";
 const CLOUD_FUNCTION_ENTRYPOINT = "agent";
 const TSV_FILE =
-  "https://raw.githubusercontent.com/actions-on-google-builder/app-builder/master/gcp-storage-transfer/actions-on-google-project-template.tsv";
+  "https://raw.githubusercontent.com/manekinekko/actions-on-google-wizard/master/gcp-storage-transfer/actions-on-google-project-template.tsv?token=ABnuHYjwLm45TQAPh7-qxAIZwhbRyNSWks5Zng90wA%3D%3D";
 
 @Injectable()
 export class GcpService implements Runnable, OnSessionExpired {
@@ -166,10 +166,10 @@ export class GcpService implements Runnable, OnSessionExpired {
     ];
 
     // @todo remove this
-    this.__skipSteps(
-      OperationType.CreatingProject,
-      OperationType.CheckingProjectAvailability
-    );
+    // this.__skipSteps(
+    //   OperationType.CreatingProject,
+    //   OperationType.CheckingProjectAvailability
+    // );
   }
 
   __skipSteps(from, to = null) {
@@ -867,7 +867,7 @@ export class GcpService implements Runnable, OnSessionExpired {
           name: `projects/${projectId}/repos/default`
           // @todo mirrorConfig seems to be read only!!!
           // mirrorConfig: {
-          //   url: 'https://github.com/actions-on-google-builder/actions-on-google-project-template.git'
+          //   url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git'
           // }
         } as Repo
       }
@@ -897,7 +897,7 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   async mirrorGithubRepoToCloudRepo(projectId) {
 
-    const githubUrl = encodeURI("https://github.com/actions-on-google-builder/actions-on-google-project-template.git");
+    const githubUrl = encodeURI("git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git");
     const cloudRepoName = "default";
     
     // document.cookie = "CONSENT=YES+FR.en+20160410-02-0; expires=Thu, 01 Jan 2222 00:00:00 GMT";

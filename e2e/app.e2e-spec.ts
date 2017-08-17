@@ -1,6 +1,6 @@
 import { AppPage } from './app.po';
 
-describe('actions-on-google-builder App', () => {
+describe('actions-on-google-wizard App', () => {
   let page: AppPage;
 
   beforeEach(() => {

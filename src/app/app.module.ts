@@ -1,18 +1,23 @@
+import { routes } from "./app.routes";
 import { MatModule } from "./_shared/mat/mat.module";
-import { BuilderModule } from "./builder/builder.module";
+import { WizardModule } from "./wizard/wizard.module";
 import { BrowserModule } from "@angular/platform-browser";
 import { NgModule } from "@angular/core";
+import { RouterModule } from "@angular/router";
 
 import { AppComponent } from "./app.component";
+import { WelcomeComponent } from "./welcome/welcome.component";
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    WelcomeComponent
   ],
   imports: [
     BrowserModule,
     MatModule,
-    BuilderModule
+    WizardModule,
+    RouterModule.forRoot(routes, {useHash: false})
   ],
   providers: [],
   bootstrap: [AppComponent]

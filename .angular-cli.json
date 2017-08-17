@@ -1,7 +1,7 @@
 {
     "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
     "project": {
-        "name": "actions-on-google-builder"
+        "name": "actions-on-google-wizard"
     },
     "apps": [{
         "root": "src",

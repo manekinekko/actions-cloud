@@ -1,7 +1,21 @@
 :host {
     display: block;
     width: 100%;
-    padding-top: 56px;
+    text-align: left;
+}
+
+:host ul,
+:host md-card-title {
+    line-height: normal;
+}
+
+:host li {
+    margin-left: 20px;
+    list-style: initial;
+}
+
+:host md-icon.prefix {
+    margin: 8px;
 }
 
 @media (max-width: 600px) {
@@ -68,6 +82,7 @@ md-progress-spinner {
 
 md-list-item.mat-list-item {
     color: lightgray;
+    height: 30px;
 }
 
 md-list-item.mat-list-item.isWorking {

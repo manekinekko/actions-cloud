@@ -14,11 +14,11 @@ export enum Providers {
 }
 
 @Component({
-  selector: "app-builder",
-  templateUrl: "./builder.component.html",
-  styleUrls: ["./builder.component.css"]
+  selector: "app-wizard",
+  templateUrl: "./wizard.component.html",
+  styleUrls: ["./wizard.component.css"]
 })
-export class BuilderComponent implements OnInit {
+export class WizardComponent implements OnInit {
   user: {
     google: any;
     github: any;
