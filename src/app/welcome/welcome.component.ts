@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SessionService } from "../wizard/session.service";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 
 @Component({
   selector: 'app-welcome',
@@ -13,7 +13,8 @@ export class WelcomeComponent implements OnInit {
 
   constructor(
     public session: SessionService,
-    public route: ActivatedRoute
+    public route: ActivatedRoute,
+    public router: Router
   ) {
     this.hasBetaAccessCode = false;
   }
@@ -25,6 +26,8 @@ export class WelcomeComponent implements OnInit {
         email: p.email,
         token: p.token
       });
+
+      this.router.navigate(['/welcome']);
   
     });
 
