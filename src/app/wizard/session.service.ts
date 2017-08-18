@@ -14,9 +14,15 @@ export class SessionService {
     public notifier: NotifierService
   ) { }
 
-  checkBetaAccess(): Promise<boolean> {
-    const baEmail = (localStorage.getItem(`ba.email`) || '').trim();
-    const baToken = (localStorage.getItem(`ba.token`) || '').trim();
+  checkBetaAccess(opts: {email: string, token: string} = { email: '', token: '' }): Promise<boolean> {
+
+    if (opts.email && opts.token) {
+      localStorage.setItem(`ba.email`, opts.email);
+      localStorage.setItem(`ba.token`, opts.token);
+    }
+
+    const baEmail = (localStorage.getItem(`ba.email`)).trim();
+    const baToken = (localStorage.getItem(`ba.token`)).trim();
 
     return new Promise( (resolve, reject) => {
       if (baEmail && baToken) {
