@@ -18,10 +18,7 @@ export class BetaAccessService implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): boolean | Observable<boolean> | Promise<boolean> {
-    return this.checkBetaAccess();
+    return this.session.checkBetaAccess(null, true);
   }
 
-  checkBetaAccess() {
-    return this.session.checkBetaAccess();
-  }
 }

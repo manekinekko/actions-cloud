@@ -14,7 +14,7 @@ export class SessionService {
     public notifier: NotifierService
   ) { }
 
-  checkBetaAccess(opts: {email: string, token: string} = { email: '', token: '' }): Promise<boolean> {
+  checkBetaAccess(opts: {email: string, token: string} = { email: '', token: '' }, isGauard = false): Promise<boolean> {
 
     if (opts.email && opts.token) {
       localStorage.setItem(`ba.email`, opts.email);
@@ -31,7 +31,6 @@ export class SessionService {
           .subscribe( async (data) => {
 
             if (data && data.email === baEmail) {
-              this.notifier.notify(null, false, false, null, "Congrats! You are now a beta tester.", 2000);
               
               try {
 
@@ -39,21 +38,45 @@ export class SessionService {
                   "ua": navigator.userAgent,
                   "lastUsed": new Date()
                 });
+
+                if (localStorage.getItem(`ba.lastUsed`) === null) {
+                  this.notifier.notify(null, false, false, {message: "Congrats! You are now a beta tester."}, null, 4000);
+                }
+
+                localStorage.setItem(`ba.lastUsed`, `${+new Date()}`);
                 resolve(true);
 
-              } catch (e) {
+              } catch (error) {
+                this.notifier.notify(null, false, false, {message: "Error detected. Report your logs to @manekinekko."});
+                console.error(`==================== report the error below this line ====================`);
+                console.error(error);
+                console.error(`==================== report the error above this line ====================`);
+                
                 resolve(false);
               }
             }
             else {
-              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Code detected."}, null, 2000);
+              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Email detected."}, null, 2000);
               resolve(false);
             }
           }, (error) => {
+              if ( error.message.startsWith("permission_denied") ) {
+              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Token detected."}, null, 2000);
+              }
+              else {
+                this.notifier.notify(null, false, false, {message: "Error detected. Report your logs to @manekinekko."});
+                console.info(`==================== report the error below this line ====================`);
+                console.info(error.message);
+                console.info(`==================== report the error above this line ====================`);
+              }
+              
               resolve(false);
           });
       }
       else {
+        if (isGauard) {
+          this.notifier.notify(null, false, false, {message: "You are not allowed to access this area. Contact @manekinekko for more details."});
+        }
         resolve(false);
       }
     });
