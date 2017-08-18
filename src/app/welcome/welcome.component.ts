@@ -17,6 +17,7 @@ export class WelcomeComponent implements OnInit {
   }
 
   async ngOnInit() {
+    this.checkBetaAccess();
     window.addEventListener('storage', e => {
       this.checkBetaAccess();
     });
