@@ -17,7 +17,7 @@ import { WelcomeComponent } from "./welcome/welcome.component";
     BrowserModule,
     MatModule,
     WizardModule,
-    RouterModule.forRoot(routes, {useHash: false})
+    RouterModule.forRoot(routes, {useHash: true})
   ],
   providers: [],
   bootstrap: [AppComponent]
