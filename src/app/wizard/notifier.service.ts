@@ -22,7 +22,8 @@ export class NotifierService {
     isWorking: boolean,
     isValid: boolean,
     error: Status = null,
-    description: string = null
+    description: string = null,
+    duration: number = 0
   ): boolean {
 
     let snackBar = null;
@@ -69,14 +70,14 @@ export class NotifierService {
             "Session expired. You need to link your account again.",
             "CLOSE",
             {
-              duration: 0
+              duration
             }
           );
           this.service.onSessionExpired.next(true);
 
         } else {
           snackBar = this.snackBar.open(error.message, "CLOSE", {
-            duration: 0
+            duration
           });
         }
 

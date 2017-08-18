@@ -25,7 +25,7 @@ export class SessionService {
           .subscribe( async (data) => {
 
             if (data && data.email === baEmail) {
-              this.notifier.notify(null, false, false, null, "Congrats! You are now a beta tester.");
+              this.notifier.notify(null, false, false, null, "Congrats! You are now a beta tester.", 2000);
               await this.db.object(`/ba/` + baToken).update({
                 "ua": navigator.userAgent,
                 "lastUsed": new Date()
@@ -33,7 +33,7 @@ export class SessionService {
               resolve(true);
             }
             else {
-              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Code detected."});
+              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Code detected."}, null, 2000);
               resolve(false);
             }
           });
