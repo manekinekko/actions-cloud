@@ -1,0 +1,12 @@
+{
+    "rules": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "ba": {
+            "$token": {
+                ".read": "root.child('ba/'+$token).exists()",
+                ".write": "root.child('ba/'+$token).exists()"
+            }
+        }
+    }
+}
