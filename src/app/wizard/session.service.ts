@@ -21,8 +21,8 @@ export class SessionService {
       localStorage.setItem(`ba.token`, opts.token);
     }
 
-    const baEmail = (localStorage.getItem(`ba.email`)).trim();
-    const baToken = (localStorage.getItem(`ba.token`)).trim();
+    const baEmail = (localStorage.getItem(`ba.email`) || '').trim();
+    const baToken = (localStorage.getItem(`ba.token`) || '').trim();
 
     return new Promise( (resolve, reject) => {
       if (baEmail && baToken) {
