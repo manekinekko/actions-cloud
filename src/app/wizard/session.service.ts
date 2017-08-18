@@ -26,16 +26,25 @@ export class SessionService {
 
             if (data && data.email === baEmail) {
               this.notifier.notify(null, false, false, null, "Congrats! You are now a beta tester.", 2000);
-              await this.db.object(`/ba/` + baToken).update({
-                "ua": navigator.userAgent,
-                "lastUsed": new Date()
-              });
-              resolve(true);
+              
+              try {
+
+                await this.db.object(`/ba/` + baToken).update({
+                  "ua": navigator.userAgent,
+                  "lastUsed": new Date()
+                });
+                resolve(true);
+
+              } catch (e) {
+                resolve(false);
+              }
             }
             else {
               this.notifier.notify(null, false, false, {message: "Wrong Beta Access Code detected."}, null, 2000);
               resolve(false);
             }
+          }, (error) => {
+              resolve(false);
           });
       }
       else {
