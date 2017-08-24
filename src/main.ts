@@ -29,5 +29,6 @@ if (environment.production) {
   
 })();
 
-console.log(`%cYou can reach out to me on twitter @manekinekko if you need an "alpha access".\nhttps://twitter.com/@manekinekko`, `padding:2px; color:white; background-color:#FB7073; border-radius:3px; text-shadow: 1px 0px 1px black; `);
-console.log(`\n\n\n\n`);
+console.log(`\n\n\n`);
+console.log(`%cYou can reach out to me on twitter @manekinekko if you need an "alpha access": https://twitter.com/@manekinekko`, `padding:2px; color:white; background-color:#FB7073; border-radius:3px; text-shadow: 1px 0px 1px black; `);
+console.log(`\n\n\n`);
