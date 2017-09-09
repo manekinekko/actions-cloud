@@ -14,7 +14,7 @@ export enum Providers {
 
 @Component({
   selector: "app-wizard",
-  templateUrl: "./wizard.component.html",
+  templateUrl: "./wizard.component.expansion.html",
   styleUrls: ["./wizard.component.css"]
 })
 export class WizardComponent implements OnInit {
@@ -23,7 +23,7 @@ export class WizardComponent implements OnInit {
     github: any;
   };
   showDots: boolean;
-  selectedCarousel: number;
+  selectedStep: number;
   projectId: string;
   scopes: {
     google: { name: string; description: string }[];
@@ -38,10 +38,23 @@ export class WizardComponent implements OnInit {
   ) {
 
     this.scopes = environment.scopes;
+    this.selectedStep = 0;
     this.user = {
       google: null,
       github: null
     };
+  }
+
+  setStep(index: number) {
+    this.selectedStep = index;
+  }
+
+  nextStep() {
+    this.selectedStep++;
+  }
+
+  prevStep() {
+    this.selectedStep--;
   }
 
   ngOnInit() {
@@ -96,13 +109,8 @@ export class WizardComponent implements OnInit {
     this.next(0);
   }
 
-  start() {
-    this.next(1);
-    this.showDots = true;
-  }
-
   next(index: number) {
-    this.selectedCarousel = index;
+    this.selectedStep = index;
   }
 
   async forkGithubProject() {
@@ -126,6 +134,8 @@ export class WizardComponent implements OnInit {
         this.session.setUserInfo("google", this.user.google);
         this.gcp.setToken(google.credential.accessToken);
         console.log(google);
+
+        this.nextStep();
         break;
 
       case Providers.GITHUB:
@@ -139,6 +149,8 @@ export class WizardComponent implements OnInit {
         this.session.setUserInfo("github", this.user.github);
         this.github.setToken(github.credential.accessToken);
         console.log(github);
+
+        this.nextStep();
         break;
     }
   }
@@ -156,14 +168,6 @@ export class WizardComponent implements OnInit {
         this.user.github = null;
         this.session.setUserInfo("github", null);
         break;
-    }
-  }
-
-  onTransition(index) {
-    this.selectedCarousel = index;
-    localStorage.setItem("ui.selected-carousel", `${this.selectedCarousel}`);
-    if (index === 0) {
-      this.showDots = false;
     }
   }
 }

@@ -1,6 +1,11 @@
-md-toolbar {
-    position: fixed;
-    height: 200px;
+:host {
+    background: url(/assets/parallax/background1.png);
+    display: block;
+    background-size: cover;
+}
+
+div {
+    padding-bottom: 80px;
 }
 
 #app-logo {

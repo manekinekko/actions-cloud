@@ -1,6 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import '~@angular/material/prebuilt-themes/indigo-pink.css';
+@import 'app/_shared/parallax/parallax.css';
 @font-face {
     font-family: 'Material Icons';
     font-style: normal;
@@ -41,10 +42,12 @@ a.mat-raised-button.mat-primary {
     color: #fff;
 }
 
+
+/* 
 .mat-warn {
     background: #f44336;
     color: #fff;
-}
+} */
 
 nav ul a,
 nav .brand-logo {
@@ -60,11 +63,13 @@ p {
 }
 
 .parallax-container {
-    min-height: 740px;
+    /* min-height: 740px;
     height: 740px;
     line-height: 0;
-    height: auto;
+    height: auto; */
     color: rgba(255, 255, 255, .9);
+    background: rgba(0, 0, 0, .4);
+    padding-bottom: 100px;
 }
 
 .parallax-container .section {
@@ -100,6 +105,11 @@ footer.page-footer {
 
 div.container {
     visibility: visible !important;
+}
+
+button.mat-button.mat-primary:focus {
+    outline: none;
+    background-color: transparent;
 }
 
 .fallback {
