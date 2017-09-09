@@ -16,7 +16,7 @@ export class SessionService {
 
   checkBetaAccess(opts: {email: string, token: string} = { email: '', token: '' }, isGauard = false): Promise<boolean> {
 
-    if (opts.email && opts.token) {
+    if (opts && opts.email && opts.token) {
       localStorage.setItem(`ba.email`, opts.email);
       localStorage.setItem(`ba.token`, opts.token);
     }

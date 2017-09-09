@@ -18,6 +18,24 @@
     margin: 8px;
 }
 
+header {
+    height: 80px;
+    width: 100%;
+}
+
+header a {
+    display: flex;
+}
+
+header h2 {
+    padding: 0;
+    margin: 13px 0;
+}
+
+a img {
+    margin: 10px;
+}
+
 @media (max-width: 600px) {
      :host {
         display: block;
