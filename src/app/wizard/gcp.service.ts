@@ -137,7 +137,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       },
       // CheckingCloudFunctionPermissions
       {
-        enabled: true,
+        enabled: false, 
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -187,6 +187,16 @@ export class GcpService implements Runnable, OnSessionExpired {
     });
   }
 
+  restoreOperations() {
+    let restoredOperations = this.session.restoreOperation('google');
+
+    Object.keys(OperationType).forEach( key => {
+      if (restoredOperations[OperationType[key]]) {
+        this.notifier.notify(OperationType[key], false, true);
+      }
+    });
+  }
+
   restoreToken() {
     this.accessToken = this.session.getAccessToken("google");
   }
@@ -233,10 +243,17 @@ export class GcpService implements Runnable, OnSessionExpired {
           operation = await logic();
         }
 
-        if (operation.error) {
+        if (operation.error && operation.error.status === "ALREADY_EXISTS") {
+          return {
+            "PREVIOUS_ENTITY_ALREADY_EXISTS": true
+          } as Operation;
+        }
+        else if (operation.error) {
           return Promise.reject(operation.error);
         }
-        this.session.saveOperation("google", operationType, operation);
+        else {
+          this.session.saveOperation("google", operationType, operation);
+        }
       }
     }
     return operation;
@@ -249,23 +266,39 @@ export class GcpService implements Runnable, OnSessionExpired {
    */
   async run(projectId: string) {
     if (this.accessToken) {
-      let lastOperation = null;
+      let lastOperation = null;  
       lastOperation = await this.runMacro( async () => await this.createCloudProject(projectId),                  lastOperation,  OperationType.CreatingProject);
-      lastOperation = await this.runMacro( async () => await this.checkProjectAvailability(lastOperation),        lastOperation,  OperationType.CheckingProjectAvailability);
+      
+      lastOperation = await this.runMacro( async () => {
+        
+        let op;
+        if (lastOperation["PREVIOUS_ENTITY_ALREADY_EXISTS"]) {
+          op = await this.getCloudProjectIfAlreadyExists(projectId);
+        }
+        else {
+          op = await this.checkProjectAvailability(lastOperation);
+        }
+        return op;
+
+      }, lastOperation,  OperationType.CheckingProjectAvailability);
+      
       lastOperation = await this.runMacro( async () => await this.checkBilling(),                                 lastOperation,  OperationType.CheckingBilling);
       lastOperation = await this.runMacro( async () => await this.enablingBillingInfo(projectId, lastOperation),  lastOperation,  OperationType.EnablingBilling);
       lastOperation = await this.runMacro( async () => await this.createCloudBucket(projectId),                   lastOperation,  OperationType.CreatingCloudBucket);
       lastOperation = await this.runMacro( async () => await this.enablePermissionsForDataSink(projectId),        lastOperation,  OperationType.EnablePermissionsForGCPDataSink);
       lastOperation = await this.runMacro( async () => await this.createTransferJob(projectId),                   lastOperation,  OperationType.UploadingProjectTemplate);
       lastOperation = await this.runMacro( async () => await this.createCloudRepository(projectId),               lastOperation,  OperationType.CreatingCloudRepository);
-      lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
+      
+      // @todo doesn't seem to be needed anymore!!??
+      // lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
+
       lastOperation = await this.runMacro( async () => await this.enableCloudFunctionService(projectId),          lastOperation,  OperationType.EnablingCloudFunctionService);
       lastOperation = await this.runMacro( async () => await this.createCloudFunction(projectId),                 lastOperation,  OperationType.CreatingCloudFunction);
       
       if (lastOperation.done) {
-        return Promise.resolve();
+        return Promise.resolve(lastOperation);
       } else {
-        return Promise.reject(false);
+        return Promise.reject(lastOperation);
       }
     } else {
 
@@ -274,7 +307,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         message: "Your Google Cloud Platform account could not be linked."
       });
 
-      return Promise.reject(false);
+      return Promise.reject({status: "NO_ACCESS_TOKEN"});
     }
   }
 
@@ -319,13 +352,21 @@ export class GcpService implements Runnable, OnSessionExpired {
 
     if (createdPorject.error) {
       // error
-
-      this.notifier.notify(
-          OperationType.CreatingProject,
-          false,
-          false,
-          createdPorject.error
-        );
+      if (createdPorject.error.status === "ALREADY_EXISTS") {
+        this.notifier.notify(
+            OperationType.CreatingProject,
+            false,
+            true
+          );
+      }
+      else {
+        this.notifier.notify(
+            OperationType.CreatingProject,
+            false,
+            false,
+            createdPorject.error
+          );
+      }
 
     } else if (createdPorject.name) {
       // success
@@ -342,6 +383,40 @@ export class GcpService implements Runnable, OnSessionExpired {
     return createdPorject;
   }
 
+  async getCloudProjectIfAlreadyExists(projectId: string) {
+
+    this.notifier.notify(
+      OperationType.CheckingProjectAvailability,
+      true,
+      false
+    );
+    
+    const createdPorject: Operation = await this.fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`);
+
+    if (createdPorject.error) {
+
+      this.notifier.notify(
+        OperationType.CheckingProjectAvailability,
+        false,
+        false,
+        createdPorject.error
+      );
+
+    }
+    else {
+
+      this.notifier.notify(
+        OperationType.CheckingProjectAvailability,
+        false,
+        true,
+        null,
+        `Project "${createdPorject.name}" is ready.`
+      );
+    }
+
+    return createdPorject;
+  }
+
   /**
    * Gets the latest state of a long-running operation. 
    * Check if the created project is available. 
@@ -349,8 +424,9 @@ export class GcpService implements Runnable, OnSessionExpired {
    * 
    * @param createdPorject The operation info received after starting created a new GCP project
    */
-  async checkProjectAvailability(createdPorject: Operation) {
+  async checkProjectAvailability(createdPorject: Operation): Promise<Operation> {
     return new Promise((resolve, reject) => {
+
       this.notifier.notify(
         OperationType.CheckingProjectAvailability,
         true,
@@ -626,7 +702,8 @@ export class GcpService implements Runnable, OnSessionExpired {
             timeout: "60s",
             availableMemoryMb: 256,
             sourceRepository: {
-              repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
+              // repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
+              repositoryUrl: `https://github.com/manekinekko/actions-on-google-project-template/`,
               sourcePath: "/",
               branch: "master"
             } as SourceRepository,
@@ -694,11 +771,13 @@ export class GcpService implements Runnable, OnSessionExpired {
       {
         method: "POST",
         body: {
-          name: `projects/${projectId}/repos/default`
+          name: `projects/${projectId}/repos/default`,
           // @todo mirrorConfig seems to be read only!!!
-          // mirrorConfig: {
-          //   url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git'
-          // }
+          mirrorConfig: {
+            url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+            webhookId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+            deployKeyId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+          }
         } as Repo
       }
     );

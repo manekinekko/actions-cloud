@@ -1,3 +1,4 @@
+import { Operation, Status } from './../gcp.types';
 import { SessionService } from "./../session.service";
 import { GithubService } from "./../github.service";
 import { environment } from "./../../../environments/environment.prod";
@@ -22,7 +23,7 @@ export class WizardComponent implements OnInit {
     google: any;
     github: any;
   };
-  showDots: boolean;
+  isStepEnabled: any[];
   selectedStep: number;
   projectId: string;
   scopes: {
@@ -37,24 +38,13 @@ export class WizardComponent implements OnInit {
     public session: SessionService
   ) {
 
+    this.isStepEnabled = Array(5).fill({ state: false });
     this.scopes = environment.scopes;
     this.selectedStep = 0;
     this.user = {
       google: null,
       github: null
     };
-  }
-
-  setStep(index: number) {
-    this.selectedStep = index;
-  }
-
-  nextStep() {
-    this.selectedStep++;
-  }
-
-  prevStep() {
-    this.selectedStep--;
   }
 
   ngOnInit() {
@@ -69,30 +59,84 @@ export class WizardComponent implements OnInit {
     this.user.google = this.session.getUserInfo("google");
     this.user.github = this.session.getUserInfo("github");
 
-    this.gcp.onSessionExpired.subscribe(async _ => {
-      this.user.google = null;
-      this.gcp.resetOperations();
-      this.gcp.resetToken();
-      this.next(3);
-    });
-
     this.github.onSessionExpired.subscribe(async _ => {
       this.user.github = null;
       this.github.resetOperations();
       this.github.resetToken();
-      this.next(1);
+      this.setStep(0);
     });
 
-    // restore carousel index
+    this.gcp.onSessionExpired.subscribe(async _ => {
+      this.user.google = null;
+      this.gcp.resetOperations();
+      this.gcp.resetToken();
+      this.setStep(3);
+    });
+
+    // restore panel index
     const storedIndex = parseInt(
       localStorage.getItem("ui.selected-carousel") || "0",
       10
     );
-
-    if (storedIndex > 0) {
-      this.showDots = true;
+    if (this.isStepEnabled[storedIndex]) {
+      this.setStep(storedIndex);
     }
-    this.next(storedIndex);
+
+    // restore github project info
+    const op = this.session.restoreOperation<any>('github');
+    if (op["0"] && op["0"].url) {
+      this.user.github.project = op["0"];
+    }
+
+    this.initStepsState();
+
+    this.gcp.restoreOperations();
+  }
+
+  setStep(index: number) {
+    this.selectedStep = index;
+    localStorage.setItem("ui.selected-carousel", `${index}`);
+  }
+
+  nextStep() {
+    this.selectedStep++;
+  }
+
+  prevStep() {
+    this.selectedStep--;
+  }
+
+  initStepsState() {
+      if (this.user.github) {
+        this.setStepsState([0, 1], true);
+        const op = this.session.restoreOperation<any>('github');
+        if (op["0"]) {
+          this.setStepsState([2], true);
+        }
+      }
+      else {
+        this.setStepsState([0], true);
+      }
+      
+      if (this.user.google) {
+        this.setStepsState([2,3,4], true);
+      }
+  }
+
+  checkStepState(step: number) {
+    return this.isStepEnabled[step].state;
+  }
+
+  checkNextStepState() {
+    return this.isStepEnabled[this.selectedStep].state;
+  }
+
+  setStepsState(steps: number[], state: boolean) {
+    for(let i=0; i<steps.length; i++) {
+      if (i < this.isStepEnabled.length && this.isStepEnabled[i]) {
+        this.isStepEnabled[ steps[i] ] = {state};
+      }
+    }
   }
 
   randomProjectId() {
@@ -102,23 +146,35 @@ export class WizardComponent implements OnInit {
   }
 
   welcomeScreen() {
-    this.showDots = false;
     // this.projectId = "";
     this.gcp.resetToken();
     this.github.resetToken();
-    this.next(0);
-  }
-
-  next(index: number) {
-    this.selectedStep = index;
+    this.setStep(0);
   }
 
   async forkGithubProject() {
-    const operation = await this.github.run();
+    try {
+      const operation = await this.github.run();
+      this.user.github.project = operation;
+      this.setStepsState([2], true);
+    }
+    catch(e) {
+      this.setStep(0);
+    }
   }
 
   async createGCPProjects() {
-    const operation = await this.gcp.run(this.projectId);
+    try {
+      const operation = await this.gcp.run(this.projectId);
+      this.setStepsState([3], true);
+      this.nextStep();
+    }
+    catch(e) {
+      console.log(e);
+      if (e && e.status === "UNAUTHENTICATED" || e.status === "NO_ACCESS_TOKEN") {
+        this.setStep(2);
+      }
+    }
   }
 
   async link(withProvider) {
@@ -133,9 +189,11 @@ export class WizardComponent implements OnInit {
 
         this.session.setUserInfo("google", this.user.google);
         this.gcp.setToken(google.credential.accessToken);
-        console.log(google);
 
+        this.setStepsState([2, 3], true);
         this.nextStep();
+
+        console.log(google);
         break;
 
       case Providers.GITHUB:
@@ -148,9 +206,11 @@ export class WizardComponent implements OnInit {
 
         this.session.setUserInfo("github", this.user.github);
         this.github.setToken(github.credential.accessToken);
-        console.log(github);
 
+        this.setStepsState([0, 1], true);
         this.nextStep();
+
+        console.log(github);
         break;
     }
   }
@@ -162,11 +222,16 @@ export class WizardComponent implements OnInit {
       case Providers.GOOGLE:
         this.user.google = null;
         this.session.setUserInfo("google", null);
+        this.setStepsState([3,4], false);
+        this.setStep(2);
         break;
 
       case Providers.GITHUB:
         this.user.github = null;
         this.session.setUserInfo("github", null);
+        this.setStepsState([0], true);
+        this.setStepsState([1,2,3,4], false);
+        this.setStep(0);
         break;
     }
   }

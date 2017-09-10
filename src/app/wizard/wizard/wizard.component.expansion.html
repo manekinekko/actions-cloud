@@ -2,14 +2,14 @@
     <a id="logo-container" href="#/" class="brand-logo">
         <img src="/assets/assistant_product_logo.png" alt="assistant_product_logo" width="64px" height="64px">
         <h2 class="header center white-text text-darken-2">
-            Actions On Google Wizard
+            Actions On Google Wizard <sup>ALPHA</sup>
         </h2>
     </a>
 </header>
 <md-accordion>
 
     <!-- link github account -->
-    <md-expansion-panel [disabled]="false" [expanded]="selectedStep === 0" (opened)="setStep(0)" hideToggle="true">
+    <md-expansion-panel [disabled]="!checkStepState(0)" [expanded]="selectedStep === 0" (opened)="setStep(0)" hideToggle="true">
         <md-expansion-panel-header>
 
             <md-panel-description *ngIf="user.github; else accountGithubNotLinked">
@@ -37,22 +37,23 @@
                     <li *ngFor="let scope of scopes.github">{{ scope.description }}</li>
                 </ul>
             </md-card-content>
-            <md-card-actions>
-                <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a>
-                <button *ngIf="!user.github; else linkedGithubRef" color="primary" md-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
-                <ng-template #linkedGithubRef>
-                    <button color="warn" md-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
-                </ng-template>
-            </md-card-actions>
         </md-card>
 
         <md-action-row>
-            <button md-button color="primary" (click)="nextStep()">Next</button>
+
+            <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a> &nbsp;&nbsp;&nbsp;
+            <button *ngIf="!user.github; else linkedGithubRef" color="primary" md-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
+            <ng-template #linkedGithubRef>
+                <button color="warn" md-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
+                <button md-button color="primary" (click)="nextStep()" [disabled]="!checkNextStepState()">Next</button>
+            </ng-template>
+
         </md-action-row>
+
     </md-expansion-panel>
 
     <!-- fork github project -->
-    <md-expansion-panel [disabled]="false" [expanded]="selectedStep === 1" (opened)="setStep(1)" hideToggle="true">
+    <md-expansion-panel [disabled]="!checkStepState(1)" [expanded]="selectedStep === 1" (opened)="setStep(1)" hideToggle="true">
         <md-expansion-panel-header>
 
             <md-panel-description *ngIf="github.isAllOperationsOK(); else githubProjectNotForked">
@@ -63,6 +64,7 @@
             <ng-template #githubProjectNotForked>
                 <md-panel-description>
                     Forking the template project
+                    <md-icon class="header-image github"></md-icon>
                 </md-panel-description>
             </ng-template>
 
@@ -93,19 +95,23 @@
                     </p>
                 </form>
             </md-card-content>
-            <md-card-actions>
-                <button color="primary" md-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
-            </md-card-actions>
         </md-card>
 
         <md-action-row>
-            <button md-button color="warn" (click)="prevStep()">Previous</button>
-            <button md-button color="primary" (click)="nextStep()">Next</button>
+
+            <ng-template #githubProjectNotForkedButton>
+                <a *ngIf="user.github" md-button target="__blank" [href]="user.github?.project?.html_url">VIEW PROJECT</a>&nbsp;&nbsp;&nbsp;
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()">Next</button>
+            </ng-template>
+
+            <button *ngIf="!github.isAllOperationsOK(); else githubProjectNotForkedButton" color="primary" md-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
+
         </md-action-row>
     </md-expansion-panel>
 
     <!-- link google account  -->
-    <md-expansion-panel [disabled]="false" [expanded]="selectedStep === 2" (opened)="setStep(2)" hideToggle="true">
+    <md-expansion-panel [disabled]="!checkStepState(2)" [expanded]="selectedStep === 2" (opened)="setStep(2)" hideToggle="true">
 
         <md-expansion-panel-header>
 
@@ -143,24 +149,25 @@
                     <li *ngFor="let scope of scopes.google">{{ scope.description }}</li>
                 </ul>
             </md-card-content>
-            <md-card-actions>
-                <a *ngIf="!user.google" md-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>
-                <button *ngIf="!user.google; else linkedGoogleRef" color="primary" md-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
-                <ng-template #linkedGoogleRef>
-                    <button color="warn" md-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
-                </ng-template>
-            </md-card-actions>
+
         </md-card>
 
         <md-action-row>
-            <button md-button color="warn" (click)="prevStep()">Previous</button>
-            <button md-button color="primary" (click)="nextStep()">Next</button>
+
+            <a *ngIf="!user.google" md-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>&nbsp;&nbsp;&nbsp;
+            <button *ngIf="!user.google; else linkedGoogleRef" color="primary" md-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
+            <ng-template #linkedGoogleRef>
+                <button color="warn" md-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()">Next</button>
+            </ng-template>
+
         </md-action-row>
 
     </md-expansion-panel>
 
     <!-- setup cloud project  -->
-    <md-expansion-panel [disabled]="false" [expanded]="selectedStep === 3" (opened)="setStep(3)" hideToggle="true">
+    <md-expansion-panel [disabled]="!checkStepState(3)" [expanded]="selectedStep === 3" (opened)="setStep(3)" hideToggle="true">
 
         <md-expansion-panel-header>
 
@@ -185,7 +192,7 @@
                     <div class="input-field col s6">
                         <md-form-field>
                             <md-icon mdPrefix class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</md-icon>
-                            <input mdInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter your project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
+                            <input mdInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter a project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
                         </md-form-field>
                     </div>
                     <p>
@@ -213,20 +220,21 @@
                     </p>
                 </form>
             </md-card-content>
-            <md-card-actions>
-                <button color="primary" md-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
-            </md-card-actions>
+
         </md-card>
 
         <md-action-row>
+
+            <button color="primary" md-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
             <button md-button color="warn" (click)="prevStep()">Previous</button>
-            <button md-button color="primary" (click)="nextStep()">Next</button>
+            <button md-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
+
         </md-action-row>
 
     </md-expansion-panel>
 
     <!-- recap  -->
-    <md-expansion-panel [disabled]="false" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
+    <md-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
         <md-expansion-panel-header>
             <md-panel-description>
                 Actions on Goolge Wizard

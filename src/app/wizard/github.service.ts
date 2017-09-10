@@ -32,7 +32,7 @@ export class GithubService implements Runnable, OnSessionExpired {
 
       if ((forkOperation as any).fork) {
         this.session.saveOperation("github", 0, forkOperation);
-        return Promise.resolve();
+        return Promise.resolve(forkOperation);
       }
       return Promise.reject(false);
     } else {

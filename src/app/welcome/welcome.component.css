@@ -2,3 +2,9 @@
     height: 500px;
     display: block;
 }
+
+sup {
+    font-size: 0.5em;
+    top: -7px;
+    position: relative;
+}

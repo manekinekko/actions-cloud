@@ -6,6 +6,12 @@
     text-align: left;
 }
 
+sup {
+    font-size: 0.5em;
+    top: -7px;
+    position: relative;
+}
+
 :host ul {
     line-height: normal;
 }
@@ -129,4 +135,8 @@ md-list-item.mat-list-item.isDirty {
 .mat-expansion-panel-header-description {
     justify-content: space-between;
     align-items: center;
+}
+
+.mat-expansion-panel-header:not([aria-disabled=true]) .mat-expansion-panel-header-description {
+    color: black;
 }
