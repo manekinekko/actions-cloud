@@ -157,7 +157,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       },
       // CreatingCloudFunction
       {
-        enabled: true,
+        enabled: false,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -293,9 +293,11 @@ export class GcpService implements Runnable, OnSessionExpired {
       // lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
 
       lastOperation = await this.runMacro( async () => await this.enableCloudFunctionService(projectId),          lastOperation,  OperationType.EnablingCloudFunctionService);
-      lastOperation = await this.runMacro( async () => await this.createCloudFunction(projectId),                 lastOperation,  OperationType.CreatingCloudFunction);
       
-      if (lastOperation.done) {
+      // @todo this step will be done by the user!!
+      // lastOperation = await this.runMacro( async () => await this.createCloudFunction(projectId),                 lastOperation,  OperationType.CreatingCloudFunction);
+      
+      if (this.isAllOperationsOK()) {
         return Promise.resolve(lastOperation);
       } else {
         return Promise.reject(lastOperation);
@@ -702,8 +704,8 @@ export class GcpService implements Runnable, OnSessionExpired {
             timeout: "60s",
             availableMemoryMb: 256,
             sourceRepository: {
-              // repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
-              repositoryUrl: `https://github.com/manekinekko/actions-on-google-project-template/`,
+              repositoryUrl: `https://source.developers.google.com/p/${projectId}/r/default/`,
+              // repositoryUrl: `https://github.com/manekinekko/actions-on-google-project-template/`,
               sourcePath: "/",
               branch: "master"
             } as SourceRepository,
@@ -773,11 +775,11 @@ export class GcpService implements Runnable, OnSessionExpired {
         body: {
           name: `projects/${projectId}/repos/default`,
           // @todo mirrorConfig seems to be read only!!!
-          mirrorConfig: {
-            url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
-            webhookId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
-            deployKeyId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
-          }
+          // mirrorConfig: {
+          //   url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+          //   webhookId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+          //   deployKeyId: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
+          // }
         } as Repo
       }
     );
@@ -1048,7 +1050,9 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   isAllOperationsOK() {
-    return this.operationSteps.every(s => s.isValid === true);
+    return this.operationSteps
+      .filter(s => s.enabled)  
+      .every(s => s.isValid === true);
   }
 
   async fetch(url, opts = {} as any): Promise<{ [key: string]: string }> {
