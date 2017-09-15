@@ -131,7 +131,7 @@
 
         <md-card class="card">
 
-            <img md-card-image src="https://www.ftrack.com/wp-content/uploads/google-cloud-platform.png">
+            <img md-card-image src="https://lh3.googleusercontent.com/-gjqMycMM010/WbfiYyxqLtI/AAAAAAAABoA/wws3Psx0yngdvRMaN6sCc6k9XMikFGv5QCL0BGAYYCw/h928/2017-09-12.png">
             <md-card-content>
                 <br>
                 <p>
@@ -233,8 +233,62 @@
 
     </md-expansion-panel>
 
-    <!-- recap  -->
+    <!--clone and push cloud function  -->
     <md-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
+        <md-expansion-panel-header>
+            <md-panel-description>
+                Adding a Repository as a Remote
+                <md-icon class="header-image"></md-icon>
+            </md-panel-description>
+        </md-expansion-panel-header>
+
+        <md-card class="card">
+            <md-card-content>
+                <p>
+                    You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git remotes.
+                </p>
+                <p>
+                    First, clone your new project from Github
+                    <br>
+                </p>
+                <pre><code>git clone {{ user.github?.project?.clone_url }} actions-on-google</code></pre>
+                <p>
+                    Change your current working directory to the directory that contains your local Git repository:
+                    <br>
+                </p>
+                <pre><code>cd actions-on-google</code></pre>
+                <p>
+                    Run the credential helper script (on Linux or Mac OS X):
+                    <br>
+                </p>
+                <code>git config credential.helper gcloud.sh</code>
+                <p>
+                    <br> Or on Windows:<br>
+
+                </p>
+                <code>git config credential.helper gcloud.cmd</code>
+                <p>
+                    <br> The credential helper scripts provide the information needed by Git to connect securely to the Cloud Source Repository using your Google account credentials. You don't need to perform any additional configuration steps (for example,
+                    uploading ssh keys) to establish this secure connection.
+                    <br> Note that the gcloud command-line tool must be in your $PATH for the credential helper scripts to work.
+                </p>
+                <p>
+                    Add the Cloud Source Repository as a remote:
+                    <br>
+                </p>
+                <pre><code>git remote add google {{ user.google?.project?.url }}/</code></pre>
+            </md-card-content>
+        </md-card>
+
+        <md-action-row>
+            <button md-button color="warn" (click)="prevStep()">Previous</button>
+            <button md-button color="primary" (click)="nextStep()">Next</button>
+        </md-action-row>
+
+    </md-expansion-panel>
+
+    <!-- recap  -->
+    <md-expansion-panel [disabled]="!checkStepState(5)" [expanded]="selectedStep === 5" (opened)="setStep(5)" hideToggle="true">
         <md-expansion-panel-header>
             <md-panel-description>
                 Actions on Goolge Wizard
