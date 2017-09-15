@@ -49,7 +49,7 @@ export class WizardComponent implements OnInit {
 
   ngOnInit() {
 
-    this.projectId = "aaaaaazzzzzzzzzzzzeeeeeeeee";
+    this.projectId = this.session.restoreProjectId();
 
     this.gcp.restoreToken();
     this.github.restoreToken();
