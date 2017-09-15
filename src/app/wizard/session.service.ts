@@ -121,7 +121,8 @@ export class SessionService {
   }
 
   restoreOperation<T>(key: string): T {
-    return JSON.parse(localStorage.getItem(`${key}.operation-steps`) || "{}");
+    const operationsSteps = localStorage.getItem(`${key}.operation-steps`);
+    return operationsSteps ? JSON.parse(operationsSteps) : null;
   }
 
 }
