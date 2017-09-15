@@ -124,4 +124,8 @@ export class SessionService {
     return JSON.parse(localStorage.getItem(`${key}.operation-steps`) || "{}");
   }
 
+  restoreProjectId(): string {
+    return localStorage.getItem('projectId') || '';
+  }
+
 }

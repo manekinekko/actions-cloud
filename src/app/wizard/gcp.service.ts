@@ -243,16 +243,19 @@ export class GcpService implements Runnable, OnSessionExpired {
           operation = await logic();
         }
 
-        if (operation.error && operation.error.status === "ALREADY_EXISTS") {
-          return {
-            "PREVIOUS_ENTITY_ALREADY_EXISTS": true
-          } as Operation;
-        }
-        else if (operation.error) {
+        if (operation) {
+          if (operation && operation.error && operation.error.status === "ALREADY_EXISTS") {
+            return {
+              "PREVIOUS_ENTITY_ALREADY_EXISTS": true
+            } as Operation;
+          }
+          else if (operation.error) {
+            return Promise.reject(operation.error);
+          } else {
+            this.session.saveOperation("google", operationType, operation);
+          }
+        } else {
           return Promise.reject(operation.error);
-        }
-        else {
-          this.session.saveOperation("google", operationType, operation);
         }
       }
     }
@@ -358,6 +361,7 @@ export class GcpService implements Runnable, OnSessionExpired {
             false,
             true
           );
+        this.session.saveOperation("google", OperationType.CreatingProject, createdPorject);
       }
       else {
         this.notifier.notify(
@@ -497,6 +501,10 @@ export class GcpService implements Runnable, OnSessionExpired {
             `Found Billing account "${account.displayName}".`
           );
           return Promise.resolve(account);
+        } else {
+          this.notifier.notify(OperationType.CheckingBilling, false, false, {
+            message: `Can't find any active billing.`
+          });
         }
       } else {
         console.warn("checkbilling::account is ", account);
