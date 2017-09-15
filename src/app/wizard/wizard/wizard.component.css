@@ -140,3 +140,16 @@ md-list-item.mat-list-item.isDirty {
 .mat-expansion-panel-header:not([aria-disabled=true]) .mat-expansion-panel-header-description {
     color: black;
 }
+
+pre {
+    overflow: hidden;
+    overflow-x: scroll;
+    padding: 8px;
+}
+
+code {
+    background: black;
+    padding: 8px 8px;
+    color: white;
+    margin: 0px;
+}
