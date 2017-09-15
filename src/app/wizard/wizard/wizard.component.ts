@@ -38,7 +38,7 @@ export class WizardComponent implements OnInit {
     public session: SessionService
   ) {
 
-    this.isStepEnabled = Array(5).fill({ state: false });
+    this.isStepEnabled = Array(6).fill({ state: false });
     this.scopes = environment.scopes;
     this.selectedStep = 0;
     this.user = {
@@ -83,9 +83,14 @@ export class WizardComponent implements OnInit {
     }
 
     // restore github project info
-    const op = this.session.restoreOperation<any>('github');
-    if (op["0"] && op["0"].url) {
-      this.user.github.project = op["0"];
+    const github = this.session.restoreOperation<any>('github');
+    if (github["0"] && github["0"].url && this.user.github) {
+      this.user.github.project = github["0"];
+    }
+
+    const google = this.session.restoreOperation<any>('google');
+    if (google["7"] && google["7"].url && this.user.google) {
+      this.user.google.project = google["7"];
     }
 
     this.initStepsState();
@@ -166,6 +171,7 @@ export class WizardComponent implements OnInit {
   async createGCPProjects() {
     try {
       const operation = await this.gcp.run(this.projectId);
+      this.user.google.project = this.session.restoreOperation('google')['0'];
       this.setStepsState([3], true);
       this.nextStep();
     }
