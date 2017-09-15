@@ -67,14 +67,15 @@ export class GithubService implements Runnable, OnSessionExpired {
       [key: string]: Operation;
     }[];
 
-    if (Object.keys(storedOperationSteps).length > 0) {
-      for (const stepIndex in storedOperationSteps) {
-        if (storedOperationSteps[stepIndex]) {
-          this.restoreOperation(stepIndex);
+    if (storedOperationSteps) {
+      if (Object.keys(storedOperationSteps).length > 0) {
+        for (const stepIndex in storedOperationSteps) {
+          if (storedOperationSteps[stepIndex]) {
+            this.restoreOperation(stepIndex);
+          }
         }
       }
     }
-
   }
 
   // mark an operation as done based on its state from the localStorage

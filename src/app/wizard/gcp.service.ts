@@ -190,11 +190,13 @@ export class GcpService implements Runnable, OnSessionExpired {
   restoreOperations() {
     let restoredOperations = this.session.restoreOperation('google');
 
-    Object.keys(OperationType).forEach( key => {
-      if (restoredOperations[OperationType[key]]) {
-        this.notifier.notify(OperationType[key], false, true);
-      }
-    });
+    if (restoredOperations) {
+      Object.keys(OperationType).forEach( key => {
+        if (restoredOperations[OperationType[key]]) {
+          this.notifier.notify(OperationType[key], false, true);
+        }
+      });
+    }
   }
 
   restoreToken() {
