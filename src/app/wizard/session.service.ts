@@ -125,4 +125,8 @@ export class SessionService {
     return operationsSteps ? JSON.parse(operationsSteps) : null;
   }
 
+  restoreProjectId(): string {
+    return localStorage.getItem('projectId') || '';
+  }
+
 }
