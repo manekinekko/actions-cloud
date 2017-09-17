@@ -192,7 +192,7 @@
                     <div class="input-field col s6">
                         <md-form-field>
                             <md-icon mdPrefix class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</md-icon>
-                            <input mdInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter a project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
+                            <input mdInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter a new project ID or import existing" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
                         </md-form-field>
                     </div>
                     <p>
@@ -225,9 +225,11 @@
 
         <md-action-row>
 
-            <button color="primary" md-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
-            <button md-button color="warn" (click)="prevStep()">Previous</button>
-            <button md-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
+            <button *ngIf="!gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" md-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
+            <ng-template #projectCreatedDoneRef>
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
+            </ng-template>
 
         </md-action-row>
 

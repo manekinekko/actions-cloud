@@ -97,7 +97,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       },
       // CreatingCloudBucket
       {
-        enabled: false,
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -107,7 +107,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       },
       // EnablePermissionsForGCPDataSink
       {
-        enabled: false,
+        enabled: true,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -246,7 +246,14 @@ export class GcpService implements Runnable, OnSessionExpired {
         }
 
         if (operation) {
-          if (operation && operation.error && operation.error.status === "ALREADY_EXISTS") {
+          if (
+            (operation.error) && 
+            (
+              operation.error.status === "ALREADY_EXISTS"
+              || 
+              operation.error.code === 409 && operation.error.message.indexOf('You already own') !== -1
+            ) 
+          ) {
             return {
               "PREVIOUS_ENTITY_ALREADY_EXISTS": true
             } as Operation;
@@ -293,10 +300,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       lastOperation = await this.runMacro( async () => await this.enablePermissionsForDataSink(projectId),        lastOperation,  OperationType.EnablePermissionsForGCPDataSink);
       lastOperation = await this.runMacro( async () => await this.createTransferJob(projectId),                   lastOperation,  OperationType.UploadingProjectTemplate);
       lastOperation = await this.runMacro( async () => await this.createCloudRepository(projectId),               lastOperation,  OperationType.CreatingCloudRepository);
-      
-      // @todo doesn't seem to be needed anymore!!??
-      // lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
-
+      lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
       lastOperation = await this.runMacro( async () => await this.enableCloudFunctionService(projectId),          lastOperation,  OperationType.EnablingCloudFunctionService);
       
       // @todo this step will be done by the user!!
@@ -320,15 +324,15 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   shouldSkip(operation: OperationType) {
     const operationSteps = this.session.restoreOperation("google");
-    if (operationSteps[operation]) {
+    if (operationSteps && operationSteps[operation]) {
       console.log(
         "[RESTORING]",
         OperationType[operation],
         operationSteps[operation]
       );
+      return this.operationSteps[operation].isValid;
     }
-
-    return this.operationSteps[operation].isValid;
+    return false;
   }
 
   isOperationEnabled(operation: OperationType) {
@@ -351,7 +355,7 @@ export class GcpService implements Runnable, OnSessionExpired {
           name: projectId,
           projectId: projectId,
           labels: {
-            mylabel: projectId
+            type: `actions-on-google-wizard`
           }
         } as Project
       }
@@ -399,7 +403,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       false
     );
     
-    const createdPorject: Operation = await this.fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`);
+    const createdPorject: Project = await this.fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`);
 
     if (createdPorject.error) {
 
@@ -725,12 +729,22 @@ export class GcpService implements Runnable, OnSessionExpired {
       );
 
       if (operation.error) {
-        this.notifier.notify(
-          OperationType.CreatingCloudFunction,
-          false,
-          false,
-          operation.error
-        );
+        if (operation.error.status === "ALREADY_EXISTS") {
+          this.notifier.notify(
+              OperationType.CreatingCloudFunction,
+              false,
+              true
+            );
+          this.session.saveOperation("google", OperationType.CreatingCloudFunction, operation);
+        }
+        else {
+            this.notifier.notify(
+              OperationType.CreatingCloudFunction,
+              false,
+              false,
+              operation.error
+            );
+        }
         resolve(operation);
       } else {
         // checking operation status
@@ -796,12 +810,22 @@ export class GcpService implements Runnable, OnSessionExpired {
     console.log(repoInfo);
 
     if (repoInfo.error) {
-      this.notifier.notify(
-        OperationType.CreatingCloudRepository,
-        false,
-        false,
-        repoInfo.error
-      );
+      if (repoInfo.error.status === "ALREADY_EXISTS") {
+          this.notifier.notify(
+              OperationType.CreatingCloudRepository,
+              false,
+              true
+            );
+          this.session.saveOperation("google", OperationType.CreatingCloudRepository, repoInfo);
+        }
+        else {
+          this.notifier.notify(
+            OperationType.CreatingCloudRepository,
+            false,
+            false,
+            repoInfo.error
+          );
+        }
     } else {
       // success
       this.notifier.notify(
@@ -850,12 +874,22 @@ export class GcpService implements Runnable, OnSessionExpired {
     );
 
     if (bucketInfo.error) {
-      this.notifier.notify(
-        OperationType.CreatingCloudBucket,
-        false,
-        false,
-        bucketInfo.error
-      );
+      if(bucketInfo.error.code === 409 && bucketInfo.error.message.indexOf('You already own this bucket') !== -1) {
+        this.notifier.notify(
+            OperationType.CreatingCloudBucket,
+            false,
+            true
+          );
+        this.session.saveOperation("google", OperationType.CreatingCloudBucket, bucketInfo);
+      }
+      else {
+        this.notifier.notify(
+          OperationType.CreatingCloudBucket,
+          false,
+          false,
+          bucketInfo.error
+        );
+      }
     } else {
       this.notifier.notify(
         OperationType.CreatingCloudBucket,

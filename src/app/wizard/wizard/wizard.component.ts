@@ -150,7 +150,6 @@ export class WizardComponent implements OnInit {
     }
   }
 
-
   async forkGithubProject() {
     try {
       const operation = await this.github.run();

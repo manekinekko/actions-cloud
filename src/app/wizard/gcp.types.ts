@@ -1,3 +1,4 @@
+import { ErrorStatus } from './gcp.types';
 import { Subject } from "rxjs/Subject";
 // NOTE: order is important!
 export enum OperationType {
@@ -170,7 +171,7 @@ export interface Status {
   }>;
 }
 
-export interface Project {
+export interface Project extends ErrorStatus {
   projectNumber?: string;
   projectId?: string;
   lifecycleState?: LifecycleState;
