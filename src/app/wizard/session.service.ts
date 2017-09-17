@@ -116,8 +116,10 @@ export class SessionService {
 
   saveOperation(key: string, operation: OperationType, entity: any) {
     const ope = this.restoreOperation(key);
-    ope[operation] = entity;
-    localStorage.setItem(`${key}.operation-steps`, JSON.stringify(ope));
+    if (ope) {
+      ope[operation] = entity;
+      localStorage.setItem(`${key}.operation-steps`, JSON.stringify(ope));
+    }
   }
 
   restoreOperation<T>(key: string): T {
@@ -125,8 +127,8 @@ export class SessionService {
     return operationsSteps ? JSON.parse(operationsSteps) : null;
   }
 
-  restoreProjectId(): string {
-    return localStorage.getItem('projectId') || '';
+  restoreGCPProjectId(): string {
+    return localStorage.getItem('google.projectId') || '';
   }
 
 }

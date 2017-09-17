@@ -49,7 +49,7 @@ export class WizardComponent implements OnInit {
 
   ngOnInit() {
 
-    this.projectId = this.session.restoreProjectId();
+    this.projectId = this.session.restoreGCPProjectId();
 
     this.gcp.restoreToken();
     this.github.restoreToken();
@@ -150,12 +150,6 @@ export class WizardComponent implements OnInit {
     }
   }
 
-  welcomeScreen() {
-    // this.projectId = "";
-    this.gcp.resetToken();
-    this.github.resetToken();
-    this.setStep(0);
-  }
 
   async forkGithubProject() {
     try {
