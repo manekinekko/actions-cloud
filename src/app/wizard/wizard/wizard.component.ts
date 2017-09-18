@@ -146,7 +146,7 @@ export class WizardComponent implements OnInit {
 
   randomProjectId() {
     if (!this.gcp.operationSteps[1].isValid) {
-      this.projectId = generate({ words: 3, number: true }).dashed;
+      this.projectId = generate({ words: 2, number: true }).dashed;
       if (this.projectId.length > 30) {
         this.projectId = this.projectId.substring(0,30);
       }
