@@ -239,13 +239,22 @@
     <md-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
         <md-expansion-panel-header>
             <md-panel-description>
-                Adding a Repository as a Remote
+                Google Repository as a Remote
                 <md-icon class="header-image"></md-icon>
             </md-panel-description>
         </md-expansion-panel-header>
 
         <md-card class="card">
             <md-card-content>
+
+                <h3>Adding a Repository as a Remote</h3>
+
+                <p>
+                    Open up the Google Cloud Shell and run the following commands.
+                </p>
+                <p>
+                    <a md-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/cloudshell/editor?project={{projectId}}&authuser=0&shellonly=false">OPEN CLOUD SHELL</a>
+                </p>
                 <p>
                     You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git remotes.
                 </p>
@@ -274,16 +283,15 @@
                     <md-icon (click)="copyText(textareaRef_3)" mdPrefix>content_copy</md-icon>
                 </p>
                 <p>
-                    <br> Or on Windows:<br>
+                    Or on Windows:<br>
                 </p>
                 <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_4.__IS_COPY_OK }">
                     <textarea #textareaRef_4 rows="1" disabled>git config credential.helper gcloud.cmd</textarea>
                     <md-icon (click)="copyText(textareaRef_4)" mdPrefix>content_copy</md-icon>
                 </p>
                 <p>
-                    <br> The credential helper scripts provide the information needed by Git to connect securely to the Cloud Source Repository using your Google account credentials. You don't need to perform any additional configuration steps (for example,
-                    uploading ssh keys) to establish this secure connection.
-                    <br> Note that the gcloud command-line tool must be in your $PATH for the credential helper scripts to work.
+                    The credential helper scripts provide the information needed by Git to connect securely to the Cloud Source Repository using your Google account credentials. You don't need to perform any additional configuration steps (for example, uploading ssh keys)
+                    to establish this secure connection. <br> Note that the gcloud command-line tool must be in your $PATH for the credential helper scripts to work.
                 </p>
                 <p>
                     Add the Cloud Source Repository as a remote:
@@ -293,6 +301,42 @@
                     <textarea #textareaRef_5 rows="1" disabled>git remote add google https://source.developers.google.com/p/{{ projectId }}/r/default</textarea>
                     <md-icon (click)="copyText(textareaRef_5)" mdPrefix>content_copy</md-icon>
                 </p>
+
+                <br>
+                <h3>Using the repository as a remote</h3>
+
+                <p>A Cloud Source Repository is a fully-featured Git repository. You can use the standard set of Git commands to interact with the repository, including push, pull, clone and log.</p>
+
+                <br>
+                <h3>Pushing to a Cloud Source Repository</h3>
+
+                <p>To push from your local Git repository to the Cloud Source Repository:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_6.__IS_COPY_OK }">
+                    <textarea #textareaRef_6 rows="1" disabled>git push google master</textarea>
+                    <md-icon (click)="copyText(textareaRef_6)" mdPrefix>content_copy</md-icon>
+                </p>
+
+                <br>
+                <h3>Pulling from a Cloud Source Repository</h3>
+
+                <p>To pull from the Cloud Source Repository to your local Git repository:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_7.__IS_COPY_OK }">
+                    <textarea #textareaRef_7 rows="1" disabled>git pull google master</textarea>
+                    <md-icon (click)="copyText(textareaRef_7)" mdPrefix>content_copy</md-icon>
+                </p>
+
+                <br>
+                <h3>Viewing the commit history from a Cloud Source Repository</h3>
+
+                <p>To view the commit history:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_8.__IS_COPY_OK }">
+                    <textarea #textareaRef_8 rows="1" disabled>git log google/master</textarea>
+                    <md-icon (click)="copyText(textareaRef_8)" mdPrefix>content_copy</md-icon>
+                </p>
+
             </md-card-content>
         </md-card>
 
