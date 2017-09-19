@@ -1,7 +1,7 @@
 import { Operation, Status } from './../gcp.types';
 import { SessionService } from "./../session.service";
 import { GithubService } from "./../github.service";
-import { environment } from "./../../../environments/environment.prod";
+import { environment } from "./../../../environments/environment";
 import { GcpService } from "./../gcp.service";
 import { Component, OnInit } from "@angular/core";
 import * as firebase from "firebase/app";
@@ -15,7 +15,7 @@ export enum Providers {
 
 @Component({
   selector: "app-wizard",
-  templateUrl: "./wizard.component.expansion.html",
+  templateUrl: "./wizard.component.html",
   styleUrls: ["./wizard.component.css"]
 })
 export class WizardComponent implements OnInit {
@@ -86,11 +86,6 @@ export class WizardComponent implements OnInit {
     const github = this.session.restoreOperation<any>('github');
     if (github && github["0"] && github["0"].url && this.user.github) {
       this.user.github.project = github["0"];
-    }
-
-    const google = this.session.restoreOperation<any>('google');
-    if (google && google["7"] && google["7"].url && this.user.google) {
-      this.user.google.project = google["7"];
     }
 
     this.initStepsState();
