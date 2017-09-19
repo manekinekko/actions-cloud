@@ -244,7 +244,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         else {
           operation = await logic();
         }
-        debugger;
+        
         if (operation) {
           if (
             (operation.error) && 
