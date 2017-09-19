@@ -122,7 +122,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Copying project template (may take up to 5min)...`,
+        description: `Copying project template (may take a while - up to 2 minutes)...`,
         description_2: `Copied Project template to bucket.`
       },
       // CreatingCloudRepository
@@ -152,7 +152,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Enabling Cloud Function service...`,
+        description: `Enabling Cloud Function service (may take a while - up to 2 minutes)...`,
         description_2: `Enabled Cloud Function service.`
       },
       // CreatingCloudFunction
