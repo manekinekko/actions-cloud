@@ -3,7 +3,7 @@ import { SessionService } from "./../session.service";
 import { GithubService } from "./../github.service";
 import { environment } from "./../../../environments/environment";
 import { GcpService } from "./../gcp.service";
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ElementRef } from "@angular/core";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
 import * as generate from "project-name-generator";
@@ -231,6 +231,18 @@ export class WizardComponent implements OnInit {
         this.setStepsState([1,2,3,4], false);
         this.setStep(0);
         break;
+    }
+  }
+
+  copyText(textareaRef: any) {
+    textareaRef.removeAttribute('disabled');
+    textareaRef.focus();
+    textareaRef.select();
+    textareaRef.setAttribute('disabled', true);
+    try {
+      textareaRef.__IS_COPY_OK = document.execCommand('copy');
+    } catch (err) {
+      console.log('Unable to copy');
     }
   }
 }
