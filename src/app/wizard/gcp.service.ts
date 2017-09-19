@@ -244,7 +244,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         else {
           operation = await logic();
         }
-
+        debugger;
         if (operation) {
           if (
             (operation.error) && 
@@ -254,6 +254,7 @@ export class GcpService implements Runnable, OnSessionExpired {
               operation.error.code === 409 && operation.error.message.indexOf('You already own') !== -1
             ) 
           ) {
+            this.session.saveOperation("google", operationType, operation);
             return {
               "PREVIOUS_ENTITY_ALREADY_EXISTS": true
             } as Operation;
@@ -369,7 +370,6 @@ export class GcpService implements Runnable, OnSessionExpired {
             false,
             true
           );
-        this.session.saveOperation("google", OperationType.CreatingProject, createdPorject);
       }
       else {
         this.notifier.notify(
@@ -735,7 +735,6 @@ export class GcpService implements Runnable, OnSessionExpired {
               false,
               true
             );
-          this.session.saveOperation("google", OperationType.CreatingCloudFunction, operation);
         }
         else {
             this.notifier.notify(
@@ -816,7 +815,6 @@ export class GcpService implements Runnable, OnSessionExpired {
               false,
               true
             );
-          this.session.saveOperation("google", OperationType.CreatingCloudRepository, repoInfo);
         }
         else {
           this.notifier.notify(
@@ -880,7 +878,6 @@ export class GcpService implements Runnable, OnSessionExpired {
             false,
             true
           );
-        this.session.saveOperation("google", OperationType.CreatingCloudBucket, bucketInfo);
       }
       else {
         this.notifier.notify(
