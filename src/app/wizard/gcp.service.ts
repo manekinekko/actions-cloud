@@ -265,7 +265,11 @@ export class GcpService implements Runnable, OnSessionExpired {
             this.session.saveOperation("google", operationType, operation);
           }
         } else {
-          return Promise.reject(operation.error);
+          return Promise.reject({
+            error: {
+              status: "UNKNOWN"
+            }
+          });
         }
       }
     }
