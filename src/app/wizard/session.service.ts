@@ -127,6 +127,10 @@ export class SessionService {
     return operationsSteps ? JSON.parse(operationsSteps) : {};
   }
 
+  setGCPProjectId(projectId: string) {
+    localStorage.setItem('google.projectId', projectId);
+  }
+
   restoreGCPProjectId(): string {
     return localStorage.getItem('google.projectId') || '';
   }

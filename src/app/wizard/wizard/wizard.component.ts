@@ -168,6 +168,7 @@ export class WizardComponent implements OnInit {
     try {
       const operation = await this.gcp.run(this.projectId);
       this.user.google.project = this.session.restoreOperation('google')['0'];
+      this.session.setGCPProjectId(this.projectId);
       this.setStepsState([3], true);
       this.nextStep();
     }

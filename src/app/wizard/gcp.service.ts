@@ -372,7 +372,9 @@ export class GcpService implements Runnable, OnSessionExpired {
         this.notifier.notify(
             OperationType.CreatingProject,
             false,
-            true
+            true,
+            null,
+            `Using existing project "${projectId}".`
           );
       }
       else {
@@ -880,7 +882,9 @@ export class GcpService implements Runnable, OnSessionExpired {
         this.notifier.notify(
             OperationType.CreatingCloudBucket,
             false,
-            true
+            true,
+            null,
+            "Using existing bucket."
           );
       }
       else {
