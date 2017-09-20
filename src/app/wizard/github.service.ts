@@ -157,4 +157,9 @@ export class GithubService implements Runnable, OnSessionExpired {
 
     return json;
   }
+
+  cleanSession() {
+    this.session.remove("github.access-token");
+    this.session.remove("github.user-info");
+  }
 }

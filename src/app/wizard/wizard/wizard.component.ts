@@ -63,6 +63,7 @@ export class WizardComponent implements OnInit {
       this.user.github = null;
       this.github.resetOperations();
       this.github.resetToken();
+      this.github.cleanSession();
       this.setStep(0);
     });
 
@@ -70,6 +71,7 @@ export class WizardComponent implements OnInit {
       this.user.google = null;
       this.gcp.resetOperations();
       this.gcp.resetToken();
+      this.gcp.cleanSession();
       this.setStep(3);
     });
 

@@ -131,4 +131,7 @@ export class SessionService {
     return localStorage.getItem('google.projectId') || '';
   }
 
+  remove(key: string) {
+    localStorage.removeItem(`${key}`);
+  }
 }

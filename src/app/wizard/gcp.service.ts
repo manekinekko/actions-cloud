@@ -199,12 +199,18 @@ export class GcpService implements Runnable, OnSessionExpired {
     }
   }
 
+
   restoreToken() {
     this.accessToken = this.session.getAccessToken("google");
   }
 
   resetToken() {
     this.setToken(null);
+  }
+
+  cleanSession() {
+    this.session.remove("google.access-token");
+    this.session.remove("google.user-info");
   }
 
   setToken(accessToken) {
