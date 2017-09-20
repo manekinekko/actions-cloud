@@ -32,10 +32,15 @@ export class NotifierService {
       this.service.operationSteps[operationType].isWorking = isWorking;
       this.service.operationSteps[operationType].isValid = isValid;
     
+
       if (isValid) {
         this.service.operationSteps[operationType].description = this.service.operationSteps[
           operationType
         ].description_2;
+      }
+      
+      if (description) {
+        this.service.operationSteps[operationType].description = description;
       }
 
     }

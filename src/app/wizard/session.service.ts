@@ -124,7 +124,11 @@ export class SessionService {
 
   restoreOperation<T>(key: string): T {
     const operationsSteps = localStorage.getItem(`${key}.operation-steps`);
-    return operationsSteps ? JSON.parse(operationsSteps) : null;
+    return operationsSteps ? JSON.parse(operationsSteps) : {};
+  }
+
+  setGCPProjectId(projectId: string) {
+    localStorage.setItem('google.projectId', projectId);
   }
 
   restoreGCPProjectId(): string {

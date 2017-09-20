@@ -2,53 +2,31 @@
     <a id="logo-container" href="#/" class="brand-logo">
         <img src="/assets/assistant_product_logo.png" alt="assistant_product_logo" width="64px" height="64px">
         <h2 class="header center white-text text-darken-2">
-            Actions On Google Wizard
+            Actions On Google Wizard <sup>ALPHA</sup>
         </h2>
     </a>
 </header>
-<app-carousel-group (transition)="onTransition($event)" [selected]="selectedCarousel" [showDots]="showDots">
+<md-accordion>
 
-    <!-- STEP #0  -->
-    <!-- <app-carousel>
+    <!-- link github account -->
+    <md-expansion-panel [disabled]="!checkStepState(0)" [expanded]="selectedStep === 0" (opened)="setStep(0)" hideToggle="true">
+        <md-expansion-panel-header>
 
-        <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Wizard</md-card-title>
-                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
-            </md-card-header>
-            <img md-card-image src="https://cdn.tproger.ru/wp-content/uploads/2017/04/googleassistantsdkmini.png">
-            <md-card-content>
-                <p>
-                    Actions on Google lets you build apps for the Google Assistant. Your apps can help you engage users through Google Home, eligible Android phones, iPhones, and in the future, through every experience where the Google Assistant is available.
-                </p>
-            </md-card-content>
-            <md-card-actions class="align-center">
-                <button color="primary" md-raised-button (click)="start()">START</button>
-            </md-card-actions>
-        </md-card>
+            <md-panel-description *ngIf="user.github; else accountGithubNotLinked">
+                Successfully linked as {{ user.github.name }} ({{ user.github.login }})
+                <md-icon class="header-image github"><img *ngIf="user.github" [src]="user.github.avatar_url"></md-icon>
+            </md-panel-description>
 
-    </app-carousel> -->
+            <ng-template #accountGithubNotLinked>
+                <md-panel-description>
+                    Link Your Github Account
+                    <md-icon class="header-image github"></md-icon>
+                </md-panel-description>
+            </ng-template>
 
-    <!-- STEP #1  -->
-    <app-carousel>
+        </md-expansion-panel-header>
 
         <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image github">
-                    <img *ngIf="user.github" [src]="user.github.avatar_url">
-                </div>
-
-                <md-card-title *ngIf="user.github; else accountGithubNotLinked">Account Linked Successfully</md-card-title>
-                <ng-template #accountGithubNotLinked>
-                    <md-card-title>Link Your Github Account</md-card-title>
-                </ng-template>
-
-                <md-card-subtitle *ngIf="user.github">{{ user.github.name }} ({{ user.github.login }})</md-card-subtitle>
-            </md-card-header>
-            <br>
-            <br>
-            <br>
             <img md-card-image src="https://enterprise.github.com/assets/home/integrations-graphic-751d7041ec159aad4acdf01d30a0685a6be2cf2b76eb2390d69f90e4ff5c67a7.svg" />
             <md-card-content>
                 <br>
@@ -59,32 +37,43 @@
                     <li *ngFor="let scope of scopes.github">{{ scope.description }}</li>
                 </ul>
             </md-card-content>
-            <md-card-actions>
-                <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a>
-                <button *ngIf="!user.github; else linkedGithubRef" color="primary" md-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
-                <ng-template #linkedGithubRef>
-                    <button color="warn" md-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
-                    <button color="primary" md-raised-button (click)="next(2)">NEXT</button>
-                </ng-template>
-            </md-card-actions>
         </md-card>
 
-    </app-carousel>
+        <md-action-row>
 
-    <!-- STEP #2  -->
-    <app-carousel>
+            <a *ngIf="!user.github" md-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a> &nbsp;&nbsp;&nbsp;
+            <button *ngIf="!user.github; else linkedGithubRef" color="primary" md-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
+            <ng-template #linkedGithubRef>
+                <button color="warn" md-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
+                <button md-button color="primary" (click)="nextStep()" [disabled]="!checkNextStepState()">Next</button>
+            </ng-template>
+
+        </md-action-row>
+
+    </md-expansion-panel>
+
+    <!-- fork github project -->
+    <md-expansion-panel [disabled]="!checkStepState(1)" [expanded]="selectedStep === 1" (opened)="setStep(1)" hideToggle="true">
+        <md-expansion-panel-header>
+
+            <md-panel-description *ngIf="github.isAllOperationsOK(); else githubProjectNotForked">
+                Project forked Successfully
+                <md-icon class="header-image github"></md-icon>
+            </md-panel-description>
+
+            <ng-template #githubProjectNotForked>
+                <md-panel-description>
+                    Forking the template project
+                    <md-icon class="header-image github"></md-icon>
+                </md-panel-description>
+            </ng-template>
+
+        </md-expansion-panel-header>
 
         <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image github">
-                    <img *ngIf="user.github" [src]="user.github.avatar_url">
-                </div>
-                <md-card-title>Forking the template project</md-card-title>
-                <md-card-subtitle *ngIf="user.github">{{ user.github.name }}</md-card-subtitle>
-            </md-card-header>
             <md-card-content>
 
-                <form #form="ngForm">
+                <form #forKGithubProjectForm="ngForm">
                     <p>
                         <md-list dense>
                             <h3 md-subheader>Applying operations</h3>
@@ -103,47 +92,54 @@
                             </md-list-item>
 
                         </md-list>
-                        <br>
-                        <md-divider></md-divider>
                     </p>
                 </form>
             </md-card-content>
-            <md-card-actions>
-                <button *ngIf="github.isAllOperationsOK(); else projectForkedDoneRef" color="primary" md-raised-button (click)="next(3)">NEXT</button>
-                <ng-template #projectForkedDoneRef>
-                    <button color="primary" md-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
-                </ng-template>
-            </md-card-actions>
         </md-card>
 
-    </app-carousel>
+        <md-action-row>
 
-    <!-- STEP #3  -->
-    <app-carousel>
+            <ng-template #githubProjectNotForkedButton>
+                <a *ngIf="user.github" md-button target="__blank" [href]="user.github?.project?.html_url">VIEW PROJECT</a>&nbsp;&nbsp;&nbsp;
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()">Next</button>
+            </ng-template>
+
+            <button *ngIf="!github.isAllOperationsOK(); else githubProjectNotForkedButton" color="primary" md-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
+
+        </md-action-row>
+    </md-expansion-panel>
+
+    <!-- link google account  -->
+    <md-expansion-panel [disabled]="!checkStepState(2)" [expanded]="selectedStep === 2" (opened)="setStep(2)" hideToggle="true">
+
+        <md-expansion-panel-header>
+
+            <md-panel-description *ngIf="user.google; else accountGoogleNotLinked">
+                Successfully linked as {{ user.google.name }}
+                <md-icon class="header-image gcp"><img *ngIf="user.google" [src]="user.google.picture"></md-icon>
+            </md-panel-description>
+
+            <ng-template #accountGoogleNotLinked>
+                <md-panel-description>
+                    Link Your Google Account
+                    <md-icon class="header-image gcp"></md-icon>
+                </md-panel-description>
+            </ng-template>
+
+        </md-expansion-panel-header>
 
         <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image google">
-                    <img *ngIf="user.google" [src]="user.google.picture">
-                </div>
 
-                <md-card-title *ngIf="user.google; else accountGoogleNotLinked">Account Linked Successfully</md-card-title>
-
-                <ng-template #accountGoogleNotLinked>
-                    <md-card-title>Link Your Google Account</md-card-title>
-                </ng-template>
-
-                <md-card-subtitle *ngIf="user.google">{{ user.google.name }}</md-card-subtitle>
-            </md-card-header>
-            <img md-card-image src="https://www.ftrack.com/wp-content/uploads/google-cloud-platform.png">
+            <img md-card-image src="https://lh3.googleusercontent.com/-gjqMycMM010/WbfiYyxqLtI/AAAAAAAABoA/wws3Psx0yngdvRMaN6sCc6k9XMikFGv5QCL0BGAYYCw/h928/2017-09-12.png">
             <md-card-content>
                 <br>
                 <p>
-                    Allow this application to access your account information in order to create:
+                    Allow this application to access your account information in order to setup:
                 </p>
                 <ul>
                     <li>An API.AI project to model your dialog;</li>
-                    <li>An Actions project for your assistant;</li>
+                    <li>An Actions project for your Assistant;</li>
                     <li>A Google Cloud Platform project.</li>
                 </ul>
                 <p>
@@ -153,35 +149,51 @@
                     <li *ngFor="let scope of scopes.google">{{ scope.description }}</li>
                 </ul>
             </md-card-content>
-            <md-card-actions>
-                <a *ngIf="!user.google" md-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>
-                <button *ngIf="!user.google; else linkedGoogleRef" color="primary" md-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
-                <ng-template #linkedGoogleRef>
-                    <button color="warn" md-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
-                    <button color="primary" md-raised-button (click)="next(4)">NEXT</button>
-                </ng-template>
-            </md-card-actions>
+
         </md-card>
 
-    </app-carousel>
+        <md-action-row>
 
-    <!-- STEP #4  -->
-    <app-carousel>
+            <a *ngIf="!user.google" md-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>&nbsp;&nbsp;&nbsp;
+            <button *ngIf="!user.google; else linkedGoogleRef" color="primary" md-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
+            <ng-template #linkedGoogleRef>
+                <button color="warn" md-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()">Next</button>
+            </ng-template>
+
+        </md-action-row>
+
+    </md-expansion-panel>
+
+    <!-- setup cloud project  -->
+    <md-expansion-panel [disabled]="!checkStepState(3)" [expanded]="selectedStep === 3" (opened)="setStep(3)" hideToggle="true">
+
+        <md-expansion-panel-header>
+
+            <md-panel-description *ngIf="user.google; else googleAccountNotLinked">
+                Setting projects for {{ user.google.name }}
+                <md-icon class="header-image gcp"></md-icon>
+            </md-panel-description>
+
+            <ng-template #googleAccountNotLinked>
+                <md-panel-description>
+                    Setup the cloud projects
+                    <md-icon class="header-image gcp"></md-icon>
+                </md-panel-description>
+            </ng-template>
+
+        </md-expansion-panel-header>
 
         <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image google">
-                    <img *ngIf="user.google" [src]="user.google.picture">
-                </div>
-                <md-card-title>Setup the cloud projects</md-card-title>
-                <md-card-subtitle *ngIf="user.google">{{ user.google.name }}</md-card-subtitle>
-            </md-card-header>
             <md-card-content>
 
-                <form #form="ngForm">
+                <form #gcpProjectForm="ngForm">
                     <div class="input-field col s6">
-                        <md-icon class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</md-icon>
-                        <input [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter your project ID" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
+                        <md-form-field>
+                            <md-icon mdPrefix class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</md-icon>
+                            <input mdInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter a new project ID or import existing" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
+                        </md-form-field>
                     </div>
                     <p>
                         <md-list dense>
@@ -208,25 +220,143 @@
                     </p>
                 </form>
             </md-card-content>
-            <md-card-actions>
-                <button *ngIf="gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" md-raised-button (click)="next(5)">NEXT</button>
-                <ng-template #projectCreatedDoneRef>
-                    <button color="primary" md-raised-button [disabled]="form.invalid" (click)="createGCPProjects()">CREATE</button>
-                </ng-template>
-            </md-card-actions>
+
         </md-card>
 
-    </app-carousel>
+        <md-action-row>
 
-    <!-- STEP #5  -->
-    <app-carousel>
+            <button *ngIf="!gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" md-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
+            <ng-template #projectCreatedDoneRef>
+                <button md-button color="warn" (click)="prevStep()">Previous</button>
+                <button md-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
+            </ng-template>
+
+        </md-action-row>
+
+    </md-expansion-panel>
+
+    <!--clone and push cloud function  -->
+    <md-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
+        <md-expansion-panel-header>
+            <md-panel-description>
+                Google Repository as a Remote
+                <md-icon class="header-image"></md-icon>
+            </md-panel-description>
+        </md-expansion-panel-header>
 
         <md-card class="card">
-            <md-card-header>
-                <div md-card-avatar class="header-image"></div>
-                <md-card-title>Actions on Goolge Wizard</md-card-title>
-                <md-card-subtitle>Build with Actions on Google</md-card-subtitle>
-            </md-card-header>
+            <md-card-content>
+
+                <h3>Adding a Repository as a Remote</h3>
+
+                <p>
+                    Open up the Google Cloud Shell and run the following commands.
+                </p>
+                <p>
+                    <a md-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/cloudshell/editor?project={{projectId}}&authuser=0&shellonly=false">OPEN CLOUD SHELL</a>
+                </p>
+                <p>
+                    You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git remotes.
+                </p>
+                <p>
+                    First, clone your new project from Github
+                    <br>
+                </p>
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_1.__IS_COPY_OK }">
+                    <textarea #textareaRef_1 rows="1" disabled>git clone {{ user.github?.project?.clone_url }} actions-on-google</textarea>
+                    <md-icon (click)="copyText(textareaRef_1)" mdPrefix>content_copy</md-icon>
+                </p>
+                <p>
+                    Change your current working directory to the directory that contains your local Git repository:
+                    <br>
+                </p>
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_2.__IS_COPY_OK }">
+                    <textarea #textareaRef_2 rows="1" disabled>cd actions-on-google</textarea>
+                    <md-icon (click)="copyText(textareaRef_2)" mdPrefix>content_copy</md-icon>
+                </p>
+                <p>
+                    Run the credential helper script (on Linux or Mac OS X):
+                    <br>
+                </p>
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_3.__IS_COPY_OK }">
+                    <textarea #textareaRef_3 rows="1" disabled>git config credential.helper gcloud.sh</textarea>
+                    <md-icon (click)="copyText(textareaRef_3)" mdPrefix>content_copy</md-icon>
+                </p>
+                <p>
+                    Or on Windows:<br>
+                </p>
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_4.__IS_COPY_OK }">
+                    <textarea #textareaRef_4 rows="1" disabled>git config credential.helper gcloud.cmd</textarea>
+                    <md-icon (click)="copyText(textareaRef_4)" mdPrefix>content_copy</md-icon>
+                </p>
+                <p>
+                    The credential helper scripts provide the information needed by Git to connect securely to the Cloud Source Repository using your Google account credentials. You don't need to perform any additional configuration steps (for example, uploading ssh keys)
+                    to establish this secure connection. <br> Note that the gcloud command-line tool must be in your $PATH for the credential helper scripts to work.
+                </p>
+                <p>
+                    Add the Cloud Source Repository as a remote:
+                    <br>
+                </p>
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_5.__IS_COPY_OK }">
+                    <textarea #textareaRef_5 rows="1" disabled>git remote add google https://source.developers.google.com/p/{{ projectId }}/r/default</textarea>
+                    <md-icon (click)="copyText(textareaRef_5)" mdPrefix>content_copy</md-icon>
+                </p>
+
+                <br>
+                <h3>Using the repository as a remote</h3>
+
+                <p>A Cloud Source Repository is a fully-featured Git repository. You can use the standard set of Git commands to interact with the repository, including push, pull, clone and log.</p>
+
+                <br>
+                <h3>Pushing to a Cloud Source Repository</h3>
+
+                <p>To push from your local Git repository to the Cloud Source Repository:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_6.__IS_COPY_OK }">
+                    <textarea #textareaRef_6 rows="1" disabled>git push google master</textarea>
+                    <md-icon (click)="copyText(textareaRef_6)" mdPrefix>content_copy</md-icon>
+                </p>
+
+                <br>
+                <h3>Pulling from a Cloud Source Repository</h3>
+
+                <p>To pull from the Cloud Source Repository to your local Git repository:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_7.__IS_COPY_OK }">
+                    <textarea #textareaRef_7 rows="1" disabled>git pull google master</textarea>
+                    <md-icon (click)="copyText(textareaRef_7)" mdPrefix>content_copy</md-icon>
+                </p>
+
+                <br>
+                <h3>Viewing the commit history from a Cloud Source Repository</h3>
+
+                <p>To view the commit history:</p>
+
+                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_8.__IS_COPY_OK }">
+                    <textarea #textareaRef_8 rows="1" disabled>git log google/master</textarea>
+                    <md-icon (click)="copyText(textareaRef_8)" mdPrefix>content_copy</md-icon>
+                </p>
+
+            </md-card-content>
+        </md-card>
+
+        <md-action-row>
+            <button md-button color="warn" (click)="prevStep()">Previous</button>
+            <button md-button color="primary" (click)="nextStep()">Next</button>
+        </md-action-row>
+
+    </md-expansion-panel>
+
+    <!-- recap  -->
+    <md-expansion-panel [disabled]="!checkStepState(5)" [expanded]="selectedStep === 5" (opened)="setStep(5)" hideToggle="true">
+        <md-expansion-panel-header>
+            <md-panel-description>
+                Actions on Goolge Wizard
+                <md-icon class="header-image"></md-icon>
+            </md-panel-description>
+        </md-expansion-panel-header>
+
+        <md-card class="card">
             <img md-card-image src="https://camo.githubusercontent.com/3feaf771c4b0ddf1dea041976d5f11d0bc518545/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f323030302f312a35312d51636a646a6c526979345f7961324e6a4132672e706e67">
             <md-card-content>
                 <p class="align-center">
@@ -235,9 +365,13 @@
                     <a md-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/home/dashboard?project={{projectId}}">CLOUD CONSOLE</a>
                 </p>
             </md-card-content>
-            <md-card-actions>
-            </md-card-actions>
         </md-card>
 
-    </app-carousel>
-</app-carousel-group>
+        <md-action-row>
+            <button md-button color="warn" (click)="prevStep()">Previous</button>
+            <button md-button color="primary" (click)="nextStep()">End</button>
+        </md-action-row>
+
+    </md-expansion-panel>
+
+</md-accordion>

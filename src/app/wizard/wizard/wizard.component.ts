@@ -1,9 +1,9 @@
 import { Operation, Status } from './../gcp.types';
 import { SessionService } from "./../session.service";
 import { GithubService } from "./../github.service";
-import { environment } from "./../../../environments/environment.prod";
+import { environment } from "./../../../environments/environment";
 import { GcpService } from "./../gcp.service";
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ElementRef } from "@angular/core";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
 import * as generate from "project-name-generator";
@@ -15,7 +15,7 @@ export enum Providers {
 
 @Component({
   selector: "app-wizard",
-  templateUrl: "./wizard.component.expansion.html",
+  templateUrl: "./wizard.component.html",
   styleUrls: ["./wizard.component.css"]
 })
 export class WizardComponent implements OnInit {
@@ -90,11 +90,6 @@ export class WizardComponent implements OnInit {
       this.user.github.project = github["0"];
     }
 
-    const google = this.session.restoreOperation<any>('google');
-    if (google && google["7"] && google["7"].url && this.user.google) {
-      this.user.google.project = google["7"];
-    }
-
     this.initStepsState();
 
     this.gcp.restoreOperations();
@@ -148,7 +143,10 @@ export class WizardComponent implements OnInit {
 
   randomProjectId() {
     if (!this.gcp.operationSteps[1].isValid) {
-      this.projectId = generate({ words: 3, number: true }).dashed;
+      this.projectId = generate({ words: 2, number: true }).dashed;
+      if (this.projectId.length > 30) {
+        this.projectId = this.projectId.substring(0,30);
+      }
     }
   }
 
@@ -167,6 +165,7 @@ export class WizardComponent implements OnInit {
     try {
       const operation = await this.gcp.run(this.projectId);
       this.user.google.project = this.session.restoreOperation('google')['0'];
+      this.session.setGCPProjectId(this.projectId);
       this.setStepsState([3], true);
       this.nextStep();
     }
@@ -234,6 +233,18 @@ export class WizardComponent implements OnInit {
         this.setStepsState([1,2,3,4], false);
         this.setStep(0);
         break;
+    }
+  }
+
+  copyText(textareaRef: any) {
+    textareaRef.removeAttribute('disabled');
+    textareaRef.focus();
+    textareaRef.select();
+    textareaRef.setAttribute('disabled', true);
+    try {
+      textareaRef.__IS_COPY_OK = document.execCommand('copy');
+    } catch (err) {
+      console.log('Unable to copy');
     }
   }
 }

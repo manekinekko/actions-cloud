@@ -122,7 +122,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Copying project template (may take up to 5min)...`,
+        description: `Copying project template (may take a while - up to 2 minutes)...`,
         description_2: `Copied Project template to bucket.`
       },
       // CreatingCloudRepository
@@ -152,7 +152,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         isDirty: false,
         isWorking: false,
         error: "",
-        description: `Enabling Cloud Function service...`,
+        description: `Enabling Cloud Function service (may take a while - up to 2 minutes)...`,
         description_2: `Enabled Cloud Function service.`
       },
       // CreatingCloudFunction
@@ -250,7 +250,7 @@ export class GcpService implements Runnable, OnSessionExpired {
         else {
           operation = await logic();
         }
-
+        
         if (operation) {
           if (
             (operation.error) && 
@@ -260,6 +260,7 @@ export class GcpService implements Runnable, OnSessionExpired {
               operation.error.code === 409 && operation.error.message.indexOf('You already own') !== -1
             ) 
           ) {
+            this.session.saveOperation("google", operationType, operation);
             return {
               "PREVIOUS_ENTITY_ALREADY_EXISTS": true
             } as Operation;
@@ -270,7 +271,11 @@ export class GcpService implements Runnable, OnSessionExpired {
             this.session.saveOperation("google", operationType, operation);
           }
         } else {
-          return Promise.reject(operation.error);
+          return Promise.reject({
+            error: {
+              status: "UNKNOWN"
+            }
+          });
         }
       }
     }
@@ -373,9 +378,10 @@ export class GcpService implements Runnable, OnSessionExpired {
         this.notifier.notify(
             OperationType.CreatingProject,
             false,
-            true
+            true,
+            null,
+            `Using existing project "${projectId}".`
           );
-        this.session.saveOperation("google", OperationType.CreatingProject, createdPorject);
       }
       else {
         this.notifier.notify(
@@ -741,7 +747,6 @@ export class GcpService implements Runnable, OnSessionExpired {
               false,
               true
             );
-          this.session.saveOperation("google", OperationType.CreatingCloudFunction, operation);
         }
         else {
             this.notifier.notify(
@@ -822,7 +827,6 @@ export class GcpService implements Runnable, OnSessionExpired {
               false,
               true
             );
-          this.session.saveOperation("google", OperationType.CreatingCloudRepository, repoInfo);
         }
         else {
           this.notifier.notify(
@@ -884,9 +888,10 @@ export class GcpService implements Runnable, OnSessionExpired {
         this.notifier.notify(
             OperationType.CreatingCloudBucket,
             false,
-            true
+            true,
+            null,
+            "Using existing bucket."
           );
-        this.session.saveOperation("google", OperationType.CreatingCloudBucket, bucketInfo);
       }
       else {
         this.notifier.notify(

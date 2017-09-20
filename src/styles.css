@@ -76,12 +76,6 @@ p {
     width: 100%;
 }
 
-@media only screen and (max-width: 992px) {
-    .parallax-container .section {
-        position: absolute;
-    }
-}
-
 @media only screen and (max-width: 800px) {
     #index-banner {
         height: auto;
@@ -127,7 +121,7 @@ button.mat-button.mat-primary:focus {
 
 .fallback {
     display: block;
-    min-height: 740px;
+    height: 740px;
     background: url(/assets/parallax/background1.png) no-repeat;
     background-size: cover;
 }
