@@ -70,7 +70,7 @@ export class NotifierService {
             (error.status && error.status.indexOf("UNAUTHENTICATED") !== -1))
         ) {
           // handle the session expired case if code=401 or status=[UNAUTHENTICATED]
-
+      
           snackBar = this.snackBar.open(
             "Session expired. You need to link your account again.",
             "CLOSE",

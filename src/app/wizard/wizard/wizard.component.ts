@@ -68,11 +68,13 @@ export class WizardComponent implements OnInit {
     });
 
     this.gcp.onSessionExpired.subscribe(async _ => {
+      
       this.user.google = null;
       this.gcp.resetOperations();
       this.gcp.resetToken();
       this.gcp.cleanSession();
-      this.setStep(3);
+      this.setStepsState([3, 4, 5, 6, 7], false);
+      this.setStep(2);
     });
 
     // restore panel index
@@ -172,7 +174,7 @@ export class WizardComponent implements OnInit {
     catch(e) {
       console.log(e);
       if (e && e.status === "UNAUTHENTICATED" || e.status === "NO_ACCESS_TOKEN") {
-        this.setStep(2);
+        // this.setStepsState([3, 4, 5, 6, 7], false);
       }
     }
   }
