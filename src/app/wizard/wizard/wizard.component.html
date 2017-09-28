@@ -258,10 +258,10 @@
                 <p>
                     You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git remotes.
                 </p>
-                
+
                 <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
                     <textarea #textareaRef_0 rows="1" disabled>curl http://zoubda.fr/shared/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
-                    <md-icon (click)="copyText(textareaRef_1)" mdPrefix>content_copy</md-icon>
+                    <md-icon (click)="copyText(textareaRef_0)" mdPrefix>content_copy</md-icon>
                 </p>
                 <!-- <p>
                     First, clone your new project from Github
