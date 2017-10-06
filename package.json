@@ -5,11 +5,13 @@
     "scripts": {
         "ng": "ng",
         "start": "ng serve",
-        "build": "ng build",
+        "build": "ng build --prod --build-optimizer",
         "test": "ng test",
         "lint": "ng lint",
         "e2e": "ng e2e",
-        "deploy": "ng build --prod --build-optimizer && firebase deploy --only hosting"
+        "deploy": "npm run build && npm run copy:assets && npm run firebase:deploy",
+        "firebase:deploy": "firebase deploy --only hosting",
+        "copy:assets": "cp ./tools/setup-gcp.sh dist/"
     },
     "private": true,
     "dependencies": {
