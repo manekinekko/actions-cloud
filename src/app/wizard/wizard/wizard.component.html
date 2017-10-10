@@ -260,52 +260,9 @@
                 </p>
                 
                 <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
-                    <textarea #textareaRef_0 rows="1" disabled>curl http://zoubda.fr/shared/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
+                    <textarea #textareaRef_0 rows="1" disabled>curl http://actions.cloud/assets/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
                     <md-icon (click)="copyText(textareaRef_1)" mdPrefix>content_copy</md-icon>
                 </p>
-                <!-- <p>
-                    First, clone your new project from Github
-                    <br>
-                </p>
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_1.__IS_COPY_OK }">
-                    <textarea #textareaRef_1 rows="1" disabled>git clone {{ user.github?.project?.clone_url }} actions-on-google</textarea>
-                    <md-icon (click)="copyText(textareaRef_1)" mdPrefix>content_copy</md-icon>
-                </p>
-                <p>
-                    Change your current working directory to the directory that contains your local Git repository:
-                    <br>
-                </p>
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_2.__IS_COPY_OK }">
-                    <textarea #textareaRef_2 rows="1" disabled>cd actions-on-google</textarea>
-                    <md-icon (click)="copyText(textareaRef_2)" mdPrefix>content_copy</md-icon>
-                </p>
-                <p>
-                    Run the credential helper script (on Linux or Mac OS X):
-                    <br>
-                </p>
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_3.__IS_COPY_OK }">
-                    <textarea #textareaRef_3 rows="1" disabled>git config credential.helper gcloud.sh</textarea>
-                    <md-icon (click)="copyText(textareaRef_3)" mdPrefix>content_copy</md-icon>
-                </p>
-                <p>
-                    Or on Windows:<br>
-                </p>
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_4.__IS_COPY_OK }">
-                    <textarea #textareaRef_4 rows="1" disabled>git config credential.helper gcloud.cmd</textarea>
-                    <md-icon (click)="copyText(textareaRef_4)" mdPrefix>content_copy</md-icon>
-                </p>
-                <p>
-                    The credential helper scripts provide the information needed by Git to connect securely to the Cloud Source Repository using your Google account credentials. You don't need to perform any additional configuration steps (for example, uploading ssh keys)
-                    to establish this secure connection. <br> Note that the gcloud command-line tool must be in your $PATH for the credential helper scripts to work.
-                </p>
-                <p>
-                    Add the Cloud Source Repository as a remote:
-                    <br>
-                </p>
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_5.__IS_COPY_OK }">
-                    <textarea #textareaRef_5 rows="1" disabled>git remote add google https://source.developers.google.com/p/{{ projectId }}/r/default</textarea>
-                    <md-icon (click)="copyText(textareaRef_5)" mdPrefix>content_copy</md-icon>
-                </p> -->
 
                 <br>
                 <h3>Using the repository as a remote</h3>
