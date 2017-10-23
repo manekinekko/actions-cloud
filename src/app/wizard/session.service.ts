@@ -27,11 +27,12 @@ export class SessionService {
     return new Promise( (resolve, reject) => {
       if (baEmail && baToken) {
         this.db.object(`/ba/` + baToken)
+          .valueChanges<{email: string}>()
           .take(1)
           .subscribe( async (data) => {
 
             if (data && data.email === baEmail) {
-              
+
               try {
 
                 await this.db.object(`/ba/` + baToken).update({
@@ -51,7 +52,7 @@ export class SessionService {
                 console.error(`==================== report the error below this line ====================`);
                 console.error(error);
                 console.error(`==================== report the error above this line ====================`);
-                
+
                 resolve(false);
               }
             }
@@ -69,7 +70,7 @@ export class SessionService {
                 console.info(error.message);
                 console.info(`==================== report the error above this line ====================`);
               }
-              
+
               resolve(false);
           });
       }

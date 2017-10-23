@@ -1,14 +1,14 @@
 import { Subject } from "rxjs/Subject";
 import { Injectable } from "@angular/core";
 import { OperationType, Status, Step } from "./gcp.types";
-import { MdSnackBar } from "@angular/material";
+import { MatSnackBar } from "@angular/material";
 
 @Injectable()
 export class NotifierService {
   service: any;
   onSessionExpired: Subject<boolean>;
 
-  constructor(public snackBar: MdSnackBar) {
+  constructor(public snackBar: MatSnackBar) {
     this.onSessionExpired = new Subject();
   }
 
@@ -31,14 +31,14 @@ export class NotifierService {
       this.service.operationSteps[operationType].isDirty = true;
       this.service.operationSteps[operationType].isWorking = isWorking;
       this.service.operationSteps[operationType].isValid = isValid;
-    
+
 
       if (isValid) {
         this.service.operationSteps[operationType].description = this.service.operationSteps[
           operationType
         ].description_2;
       }
-      
+
       if (description) {
         this.service.operationSteps[operationType].description = description;
       }
@@ -61,16 +61,16 @@ export class NotifierService {
           //   this.service.operationSteps[operationType].isSkipped = true;
           //   this.service.operationSteps[operationType].error = "";
           // }
-          
+
           return false;
-          
+
         }
         else if (
           (error.code === 401 ||
             (error.status && error.status.indexOf("UNAUTHENTICATED") !== -1))
         ) {
           // handle the session expired case if code=401 or status=[UNAUTHENTICATED]
-      
+
           snackBar = this.snackBar.open(
             "Session expired. You need to link your account again.",
             "CLOSE",

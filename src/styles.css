@@ -35,7 +35,7 @@ a {
     color: #599DF0;
 }
 
-md-toolbar.mat-toolbar.mat-primary,
+mat-toolbar.mat-toolbar.mat-primary,
 button.mat-raised-button.mat-primary,
 a.mat-raised-button.mat-primary {
     background: #599DF0;
@@ -89,7 +89,7 @@ p {
     a.brand-logo img {
         margin: auto auto !important;
     }
-    md-panel-description {
+    mat-panel-description {
         font-size: 0.8em !important;
     }
     .row .col.m4 {

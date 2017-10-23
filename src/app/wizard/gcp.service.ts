@@ -25,7 +25,7 @@ import {
   OnSessionExpired
 } from "./gcp.types";
 import { Injectable } from "@angular/core";
-import { MdSnackBar } from "@angular/material";
+import { MatSnackBar } from "@angular/material";
 import { Subject } from "rxjs/Subject";
 
 const BUCKET_NAME = "bucket";
@@ -41,7 +41,7 @@ export class GcpService implements Runnable, OnSessionExpired {
   accessToken: string;
 
   constructor(
-    public snackBar: MdSnackBar, 
+    public snackBar: MatSnackBar, 
     public session: SessionService) {
     this.notifier = new NotifierService(snackBar).registerService(this);
     this.accessToken = null;

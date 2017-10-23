@@ -1,6 +1,6 @@
 import { Subject } from "rxjs/Subject";
 import { SessionService } from "./session.service";
-import { MdSnackBar } from "@angular/material";
+import { MatSnackBar } from "@angular/material";
 import { NotifierService } from "./notifier.service";
 import { Injectable } from "@angular/core";
 import {
@@ -19,7 +19,7 @@ export class GithubService implements Runnable, OnSessionExpired {
   operationSteps: Step[];
   notifier: NotifierService;
 
-  constructor(public snackBar: MdSnackBar, public session: SessionService) {
+  constructor(public snackBar: MatSnackBar, public session: SessionService) {
     this.notifier = new NotifierService(snackBar).registerService(this);
     this.resetOperations();
     this.onSessionExpired = new Subject();
@@ -36,7 +36,7 @@ export class GithubService implements Runnable, OnSessionExpired {
       }
       return Promise.reject(false);
     } else {
-      
+
       console.warn("Github Access Token is not set", this.accessToken);
       this.notifier.notify(null, false, false, {
         message: "Your Github account could not be linked."

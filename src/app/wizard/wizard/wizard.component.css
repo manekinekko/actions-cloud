@@ -22,7 +22,7 @@ sup {
     list-style: initial;
 }
 
-:host md-icon.prefix {
+:host mat-icon.prefix {
     margin: 8px;
 }
 
@@ -79,25 +79,25 @@ a img {
     text-align: center;
 }
 
-md-card-actions {
+mat-card-actions {
     text-align: center;
 }
 
-md-card.card.mat-card {
+mat-card.card.mat-card {
     box-shadow: none;
 }
 
-md-form-field {
+mat-form-field {
     width: 100%;
 }
 
-md-icon[md-list-icon] {
+mat-icon[mat-list-icon] {
     color: green;
     margin-top: -6px;
 }
 
 span.error-message,
-md-icon[md-list-icon].error-message {
+mat-icon[mat-list-icon].error-message {
     color: #F44336;
 }
 
@@ -105,22 +105,22 @@ md-icon[md-list-icon].error-message {
     color: orange;
 }
 
-md-progress-spinner {
+mat-progress-spinner {
     width: 24px;
     height: 24px;
 }
 
-md-list-item.mat-list-item {
+mat-list-item.mat-list-item {
     color: lightgray;
     height: 30px;
 }
 
-md-list-item.mat-list-item.isWorking {
+mat-list-item.mat-list-item.isWorking {
     font-weight: bold;
     color: black;
 }
 
-md-list-item.mat-list-item.isDirty {
+mat-list-item.mat-list-item.isDirty {
     color: black;
 }
 
@@ -169,10 +169,10 @@ p.copy-command {
     align-items: center;
 }
 
-p.copy-command md-icon {
+p.copy-command mat-icon {
     cursor: pointer;
 }
 
-p.copy-command.copy-ok md-icon {
+p.copy-command.copy-ok mat-icon {
     color: green;
 }
