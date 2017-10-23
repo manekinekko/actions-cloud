@@ -1,6 +1,6 @@
-[![CircleCI](https://circleci.com/gh/manekinekko/actions-on-google-wizard.svg?style=svg)](https://circleci.com/gh/manekinekko/actions-on-google-wizard)
 
-<div style="text-align:center"><img src="https://user-images.githubusercontent.com/1699357/28988374-d97a1e20-796f-11e7-986e-f8c9eb7cecfe.png" /></div>
+
+<div style="text-align:center"><img src="https://user-images.githubusercontent.com/1699357/31888015-b4cba80e-b7fa-11e7-889a-2ad01132dfbe.png" /></div>
 
 # Actions On Google Wizard
 
