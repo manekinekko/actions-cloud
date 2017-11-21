@@ -5,12 +5,7 @@
             "firebase.json",
             "**/.*",
             "**/node_modules/**"
-        ],
-        "redirects": [{
-            "source": "/gcp",
-            "destination": "https://actions.cloud/starter/gcp.sh",
-            "type": 302
-        }]
+        ]
     },
     "database": {
         "rules": "database.rules.json"

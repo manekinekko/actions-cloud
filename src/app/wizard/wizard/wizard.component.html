@@ -276,7 +276,7 @@
         </p>
 
         <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
-          <textarea #textareaRef_0 rows="1" disabled>curl https://actions.cloud/gcp | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
+          <textarea #textareaRef_0 rows="1" disabled>https://actions.cloud/starter/gcp.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
           <mat-icon (click)="copyText(textareaRef_0)" matPrefix>content_copy</mat-icon>
         </p>
 
