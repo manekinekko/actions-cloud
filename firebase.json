@@ -8,7 +8,7 @@
         ],
         "redirects": [{
             "source": "/gcp",
-            "destination": "https://actions.cloud/assets/starter.sh",
+            "destination": "https://actions.cloud/starter/gcp.sh",
             "type": 302
         }]
     },
