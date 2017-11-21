@@ -835,7 +835,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       {
         method: "POST",
         body: {
-          name: `projects/${projectId}/repos/default`
+          name: `projects/${projectId}/repos/default`,
           // @todo mirrorConfig seems to be read only!!!
           // mirrorConfig: {
           //   url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
@@ -1115,7 +1115,7 @@ export class GcpService implements Runnable, OnSessionExpired {
    *
    * @param callback The code to be executed every 1 second
    */
-  poll(callback: Function, max = 20, timeoutCallback: Function = () => {}) {
+  poll(callback: Function, max = 120, timeoutCallback: Function = () => {}) {
     let timer = null;
     let count = 0;
     timer = setInterval(arg => {
