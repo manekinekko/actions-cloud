@@ -26,7 +26,6 @@ export class GithubService implements Runnable, OnSessionExpired {
   }
 
   async run() {
-
     if (this.accessToken) {
       const forkOperation = await this.fork();
 
@@ -36,7 +35,6 @@ export class GithubService implements Runnable, OnSessionExpired {
       }
       return Promise.reject(false);
     } else {
-
       console.warn("Github Access Token is not set", this.accessToken);
       this.notifier.notify(null, false, false, {
         message: "Your Github account could not be linked."
@@ -85,7 +83,7 @@ export class GithubService implements Runnable, OnSessionExpired {
       isValid: true,
       isDirty: true,
       isWorking: false,
-      description: this.operationSteps[stepIndex].description_2,
+      description: this.operationSteps[stepIndex].description_2
     } as Step;
   }
 
@@ -105,8 +103,7 @@ export class GithubService implements Runnable, OnSessionExpired {
     if (accessToken) {
       this.accessToken = accessToken;
       localStorage.setItem(`github.access-token`, this.accessToken);
-    }
-    else {
+    } else {
       localStorage.removeItem(`github.access-token`);
     }
   }

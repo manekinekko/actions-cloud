@@ -1,20 +1,20 @@
 :host {
-    /* height: 500px; */
-    display: block;
+  /* height: 500px; */
+  display: block;
 }
 
 sup {
-    font-size: 0.5em;
-    top: -7px;
-    position: relative;
+  font-size: 0.5em;
+  top: -7px;
+  position: relative;
 }
 
 .no-pad-bot {
-    padding-bottom: 80px;
+  padding-bottom: 80px;
 }
 
 .landing {
-    width: 100%;
-    background: white;
-    color: black;
+  width: 100%;
+  background: white;
+  color: black;
 }

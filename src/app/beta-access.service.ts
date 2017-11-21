@@ -1,4 +1,4 @@
-import { SessionService } from './wizard/session.service';
+import { SessionService } from "./wizard/session.service";
 import { Injectable } from "@angular/core";
 import {
   CanActivate,
@@ -9,10 +9,7 @@ import { Observable } from "rxjs/Observable";
 
 @Injectable()
 export class BetaAccessService implements CanActivate {
-
-  constructor(
-    public session: SessionService
-  ) {}
+  constructor(public session: SessionService) {}
 
   canActivate(
     route: ActivatedRouteSnapshot,
@@ -20,5 +17,4 @@ export class BetaAccessService implements CanActivate {
   ): boolean | Observable<boolean> | Promise<boolean> {
     return this.session.checkBetaAccess(null, true);
   }
-
 }

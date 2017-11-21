@@ -1,82 +1,116 @@
-import { NotifierService } from './notifier.service';
-import { Observable } from 'rxjs/Observable';
+import { NotifierService } from "./notifier.service";
+import { Observable } from "rxjs/Observable";
 import { Injectable } from "@angular/core";
-import { AngularFireDatabase } from 'angularfire2/database';
+import { AngularFireDatabase } from "angularfire2/database";
 import * as firebase from "firebase";
 import { OperationType } from "./gcp.types";
-import 'rxjs/add/operator/take';
+import "rxjs/add/operator/take";
 
 @Injectable()
 export class SessionService {
-
   constructor(
     public db: AngularFireDatabase,
     public notifier: NotifierService
-  ) { }
+  ) {}
 
-  checkBetaAccess(opts: {email: string, token: string} = { email: '', token: '' }, isGauard = false): Promise<boolean> {
-
+  checkBetaAccess(
+    opts: { email: string; token: string } = { email: "", token: "" },
+    isGauard = false
+  ): Promise<boolean> {
     if (opts && opts.email && opts.token) {
       localStorage.setItem(`ba.email`, opts.email);
       localStorage.setItem(`ba.token`, opts.token);
     }
 
-    const baEmail = (localStorage.getItem(`ba.email`) || '').trim();
-    const baToken = (localStorage.getItem(`ba.token`) || '').trim();
+    const baEmail = (localStorage.getItem(`ba.email`) || "").trim();
+    const baToken = (localStorage.getItem(`ba.token`) || "").trim();
 
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       if (baEmail && baToken) {
-        this.db.object(`/ba/` + baToken)
-          .valueChanges<{email: string}>()
+        this.db
+          .object(`/ba/` + baToken)
+          .valueChanges<{ email: string }>()
           .take(1)
-          .subscribe( async (data) => {
+          .subscribe(
+            async data => {
+              if (data && data.email === baEmail) {
+                try {
+                  await this.db.object(`/ba/` + baToken).update({
+                    ua: navigator.userAgent,
+                    lastUsed: new Date()
+                  });
 
-            if (data && data.email === baEmail) {
+                  if (localStorage.getItem(`ba.lastUsed`) === null) {
+                    this.notifier.notify(
+                      null,
+                      false,
+                      false,
+                      { message: "Congrats! You are now a beta tester." },
+                      null,
+                      4000
+                    );
+                  }
 
-              try {
+                  localStorage.setItem(`ba.lastUsed`, `${+new Date()}`);
+                  resolve(true);
+                } catch (error) {
+                  this.notifier.notify(null, false, false, {
+                    message: "Error detected. Report your logs to @manekinekko."
+                  });
+                  console.error(
+                    `==================== report the error below this line ====================`
+                  );
+                  console.error(error);
+                  console.error(
+                    `==================== report the error above this line ====================`
+                  );
 
-                await this.db.object(`/ba/` + baToken).update({
-                  "ua": navigator.userAgent,
-                  "lastUsed": new Date()
-                });
-
-                if (localStorage.getItem(`ba.lastUsed`) === null) {
-                  this.notifier.notify(null, false, false, {message: "Congrats! You are now a beta tester."}, null, 4000);
+                  resolve(false);
                 }
-
-                localStorage.setItem(`ba.lastUsed`, `${+new Date()}`);
-                resolve(true);
-
-              } catch (error) {
-                this.notifier.notify(null, false, false, {message: "Error detected. Report your logs to @manekinekko."});
-                console.error(`==================== report the error below this line ====================`);
-                console.error(error);
-                console.error(`==================== report the error above this line ====================`);
-
+              } else {
+                this.notifier.notify(
+                  null,
+                  false,
+                  false,
+                  { message: "Wrong Beta Access Email detected." },
+                  null,
+                  2000
+                );
                 resolve(false);
               }
-            }
-            else {
-              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Email detected."}, null, 2000);
-              resolve(false);
-            }
-          }, (error) => {
-              if ( error.message.startsWith("permission_denied") ) {
-              this.notifier.notify(null, false, false, {message: "Wrong Beta Access Token detected."}, null, 2000);
-              }
-              else {
-                this.notifier.notify(null, false, false, {message: "Error detected. Report your logs to @manekinekko."});
-                console.info(`==================== report the error below this line ====================`);
+            },
+            error => {
+              if (error.message.startsWith("permission_denied")) {
+                this.notifier.notify(
+                  null,
+                  false,
+                  false,
+                  { message: "Wrong Beta Access Token detected." },
+                  null,
+                  2000
+                );
+              } else {
+                this.notifier.notify(null, false, false, {
+                  message: "Error detected. Report your logs to @manekinekko."
+                });
+                console.info(
+                  `==================== report the error below this line ====================`
+                );
                 console.info(error.message);
-                console.info(`==================== report the error above this line ====================`);
+                console.info(
+                  `==================== report the error above this line ====================`
+                );
               }
 
               resolve(false);
-          });
-      }
-      else {
+            }
+          );
+      } else {
         if (isGauard) {
-          this.notifier.notify(null, false, false, {message: "You are not allowed to access this area. Contact @manekinekko for more details."});
+          this.notifier.notify(null, false, false, {
+            message:
+              "You are not allowed to access this area. Contact @manekinekko for more details."
+          });
         }
         resolve(false);
       }
@@ -90,8 +124,7 @@ export class SessionService {
   setAccessToken(key, value) {
     if (value === null) {
       localStorage.removeItem(`${key}.access-token`);
-    }
-    else {
+    } else {
       localStorage.setItem(`${key}.access-token`, value);
     }
   }
@@ -99,8 +132,7 @@ export class SessionService {
   setUserInfo(key: string, entity?: any) {
     if (entity) {
       localStorage.setItem(`${key}.user-info`, JSON.stringify(entity));
-    }
-    else {
+    } else {
       localStorage.removeItem(`${key}.user-info`);
     }
   }
@@ -108,8 +140,7 @@ export class SessionService {
   getUserInfo(key: string) {
     if (this.getAccessToken(key)) {
       return JSON.parse(localStorage.getItem(`${key}.user-info`));
-    }
-    else {
+    } else {
       localStorage.removeItem(`${key}.user-info`);
       return null;
     }
@@ -129,11 +160,11 @@ export class SessionService {
   }
 
   setGCPProjectId(projectId: string) {
-    localStorage.setItem('google.projectId', projectId);
+    localStorage.setItem("google.projectId", projectId);
   }
 
   restoreGCPProjectId(): string {
-    return localStorage.getItem('google.projectId') || '';
+    return localStorage.getItem("google.projectId") || "";
   }
 
   remove(key: string) {

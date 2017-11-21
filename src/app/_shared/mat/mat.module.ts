@@ -1,5 +1,5 @@
-import { NgModule } from '@angular/core';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { NgModule } from "@angular/core";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import {
   MatToolbarModule,
@@ -29,12 +29,8 @@ export const MdModules = [
 ];
 
 @NgModule({
-  imports: [
-    MdModules
-  ],
-  exports: [
-    ...MdModules
-  ],
+  imports: [MdModules],
+  exports: [...MdModules],
   declarations: []
 })
-export class MatModule { }
+export class MatModule {}

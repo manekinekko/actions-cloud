@@ -1,4 +1,4 @@
-import { ErrorStatus } from './gcp.types';
+import { ErrorStatus } from "./gcp.types";
 import { Subject } from "rxjs/Subject";
 // NOTE: order is important!
 export enum OperationType {
@@ -51,7 +51,7 @@ export interface OnSessionExpired {
   onSessionExpired: Subject<boolean>;
 }
 export interface Runnable {
-  run(projectId?: string): Promise<boolean | Operation | number>;
+  run(projectId?: string): Promise<boolean | Operation | number>;
   fetch(url, opts?: any): Promise<{ [key: string]: string }>;
 }
 

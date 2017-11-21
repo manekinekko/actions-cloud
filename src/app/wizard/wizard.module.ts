@@ -1,4 +1,4 @@
-import { RouterModule } from '@angular/router';
+import { RouterModule } from "@angular/router";
 import { SessionService } from "./session.service";
 import { NotifierService } from "./notifier.service";
 import { GcpService } from "./gcp.service";
@@ -27,6 +27,12 @@ import { AngularFireDatabaseModule } from "angularfire2/database";
   ],
   declarations: [WizardComponent],
   exports: [WizardComponent],
-  providers: [GcpService, GithubService, NotifierService, SessionService, BetaAccessService]
+  providers: [
+    GcpService,
+    GithubService,
+    NotifierService,
+    SessionService,
+    BetaAccessService
+  ]
 })
-export class WizardModule { }
+export class WizardModule {}

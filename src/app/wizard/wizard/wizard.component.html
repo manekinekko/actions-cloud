@@ -1,339 +1,356 @@
 <header>
-    <a id="logo-container" href="#/" class="brand-logo">
-        <img src="/assets/assistant_product_logo.png" alt="assistant_product_logo" width="64px" height="64px">
-        <h2 class="header center white-text text-darken-2">
-            Actions On Google Wizard <sup>ALPHA</sup>
-        </h2>
-    </a>
+  <a id="logo-container" href="#/" class="brand-logo">
+    <img src="/assets/assistant_product_logo.png" alt="assistant_product_logo" width="64px" height="64px">
+    <h2 class="header center white-text text-darken-2">
+      Actions On Google Wizard
+      <sup>ALPHA</sup>
+    </h2>
+  </a>
 </header>
 <mat-accordion>
 
-    <!-- link github account -->
-    <mat-expansion-panel [disabled]="!checkStepState(0)" [expanded]="selectedStep === 0" (opened)="setStep(0)" hideToggle="true">
-        <mat-expansion-panel-header>
+  <!-- link github account -->
+  <mat-expansion-panel [disabled]="!checkStepState(0)" [expanded]="selectedStep === 0" (opened)="setStep(0)" hideToggle="true">
+    <mat-expansion-panel-header>
 
-            <mat-panel-description *ngIf="user.github; else accountGithubNotLinked">
-                Successfully linked as {{ user.github.name }} ({{ user.github.login }})
-                <mat-icon class="header-image github"><img *ngIf="user.github" [src]="user.github.avatar_url"></mat-icon>
-            </mat-panel-description>
+      <mat-panel-description *ngIf="user.github; else accountGithubNotLinked">
+        Successfully linked as {{ user.github.name }} ({{ user.github.login }})
+        <mat-icon class="header-image github">
+          <img *ngIf="user.github" [src]="user.github.avatar_url">
+        </mat-icon>
+      </mat-panel-description>
 
-            <ng-template #accountGithubNotLinked>
-                <mat-panel-description>
-                    Link Your Github Account
-                    <mat-icon class="header-image github"></mat-icon>
-                </mat-panel-description>
-            </ng-template>
+      <ng-template #accountGithubNotLinked>
+        <mat-panel-description>
+          Link Your Github Account
+          <mat-icon class="header-image github"></mat-icon>
+        </mat-panel-description>
+      </ng-template>
 
-        </mat-expansion-panel-header>
+    </mat-expansion-panel-header>
 
-        <mat-card class="card">
-            <img mat-card-image src="https://enterprise.github.com/assets/home/integrations-graphic-751d7041ec159aad4acdf01d30a0685a6be2cf2b76eb2390d69f90e4ff5c67a7.svg" />
-            <mat-card-content>
-                <br>
-                <p>
-                    This application will ask for these permissions:
+    <mat-card class="card">
+      <img mat-card-image src="https://enterprise.github.com/assets/home/integrations-graphic-751d7041ec159aad4acdf01d30a0685a6be2cf2b76eb2390d69f90e4ff5c67a7.svg"
+      />
+      <mat-card-content>
+        <br>
+        <p>
+          This application will ask for these permissions:
+        </p>
+        <ul class="permissions">
+          <li *ngFor="let scope of scopes.github">{{ scope.description }}</li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-action-row>
+
+      <a *ngIf="!user.github" mat-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a> &nbsp;&nbsp;&nbsp;
+      <button *ngIf="!user.github; else linkedGithubRef" color="primary" mat-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
+      <ng-template #linkedGithubRef>
+        <button color="warn" mat-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
+        <button mat-button color="primary" (click)="nextStep()" [disabled]="!checkNextStepState()">Next</button>
+      </ng-template>
+
+    </mat-action-row>
+
+  </mat-expansion-panel>
+
+  <!-- fork github project -->
+  <mat-expansion-panel [disabled]="!checkStepState(1)" [expanded]="selectedStep === 1" (opened)="setStep(1)" hideToggle="true">
+    <mat-expansion-panel-header>
+
+      <mat-panel-description *ngIf="github.isAllOperationsOK(); else githubProjectNotForked">
+        Project forked Successfully
+        <mat-icon class="header-image github"></mat-icon>
+      </mat-panel-description>
+
+      <ng-template #githubProjectNotForked>
+        <mat-panel-description>
+          Forking the template project
+          <mat-icon class="header-image github"></mat-icon>
+        </mat-panel-description>
+      </ng-template>
+
+    </mat-expansion-panel-header>
+
+    <mat-card class="card">
+      <mat-card-content>
+
+        <form #forKGithubProjectForm="ngForm">
+          <p>
+            <mat-list dense>
+              <h3 mat-subheader>Applying operations</h3>
+              <mat-list-item *ngFor="let step of github.operationSteps" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
+
+                <div mat-list-icon>
+                  <mat-icon mat-list-icon *ngIf="step.isSkipped" class="skipped-message">error_outline</mat-icon>
+                  <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
+                  <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
+                  <div *ngIf="step.isWorking === true">
+                    <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
+                  </div>
+                </div>
+
+                <p mat-line>{{ step.description }}
+                  <span class="error-message" mat-line [title]="step.error" *ngIf="!!step.error">[{{ step.error }}]</span>
                 </p>
-                <ul class="permissions">
-                    <li *ngFor="let scope of scopes.github">{{ scope.description }}</li>
-                </ul>
-            </mat-card-content>
-        </mat-card>
+              </mat-list-item>
 
-        <mat-action-row>
+            </mat-list>
+          </p>
+        </form>
+      </mat-card-content>
+    </mat-card>
 
-            <a *ngIf="!user.github" mat-button target="__blank" href="https://github.com/join?source=actions-on-google-wizard">CREATE A FREE ACCOUNT</a> &nbsp;&nbsp;&nbsp;
-            <button *ngIf="!user.github; else linkedGithubRef" color="primary" mat-raised-button (click)="link('GITHUB')">LINK GITHUB</button>
-            <ng-template #linkedGithubRef>
-                <button color="warn" mat-raised-button (click)="unlink('GITHUB')">UNLINK GITHUB ACCOUNT</button>
-                <button mat-button color="primary" (click)="nextStep()" [disabled]="!checkNextStepState()">Next</button>
-            </ng-template>
+    <mat-action-row>
 
-        </mat-action-row>
+      <ng-template #githubProjectNotForkedButton>
+        <a *ngIf="user.github" mat-button target="__blank" [href]="user.github?.project?.html_url">VIEW PROJECT</a>&nbsp;&nbsp;&nbsp;
+        <button mat-button color="warn" (click)="prevStep()">Previous</button>
+        <button mat-button color="primary" (click)="nextStep()">Next</button>
+      </ng-template>
 
-    </mat-expansion-panel>
+      <button *ngIf="!github.isAllOperationsOK(); else githubProjectNotForkedButton" color="primary" mat-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
 
-    <!-- fork github project -->
-    <mat-expansion-panel [disabled]="!checkStepState(1)" [expanded]="selectedStep === 1" (opened)="setStep(1)" hideToggle="true">
-        <mat-expansion-panel-header>
+    </mat-action-row>
+  </mat-expansion-panel>
 
-            <mat-panel-description *ngIf="github.isAllOperationsOK(); else githubProjectNotForked">
-                Project forked Successfully
-                <mat-icon class="header-image github"></mat-icon>
-            </mat-panel-description>
+  <!-- link google account  -->
+  <mat-expansion-panel [disabled]="!checkStepState(2)" [expanded]="selectedStep === 2" (opened)="setStep(2)" hideToggle="true">
 
-            <ng-template #githubProjectNotForked>
-                <mat-panel-description>
-                    Forking the template project
-                    <mat-icon class="header-image github"></mat-icon>
-                </mat-panel-description>
-            </ng-template>
+    <mat-expansion-panel-header>
 
-        </mat-expansion-panel-header>
+      <mat-panel-description *ngIf="user.google; else accountGoogleNotLinked">
+        Successfully linked as {{ user.google.name }}
+        <mat-icon class="header-image gcp">
+          <img *ngIf="user.google" [src]="user.google.picture">
+        </mat-icon>
+      </mat-panel-description>
 
-        <mat-card class="card">
-            <mat-card-content>
+      <ng-template #accountGoogleNotLinked>
+        <mat-panel-description>
+          Link Your Google Account
+          <mat-icon class="header-image gcp"></mat-icon>
+        </mat-panel-description>
+      </ng-template>
 
-                <form #forKGithubProjectForm="ngForm">
-                    <p>
-                        <mat-list dense>
-                            <h3 mat-subheader>Applying operations</h3>
-                            <mat-list-item *ngFor="let step of github.operationSteps" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
+    </mat-expansion-panel-header>
 
-                                <div mat-list-icon>
-                                    <mat-icon mat-list-icon *ngIf="step.isSkipped" class="skipped-message">error_outline</mat-icon>
-                                    <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
-                                    <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
-                                    <div *ngIf="step.isWorking === true">
-                                        <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
-                                    </div>
-                                </div>
+    <mat-card class="card">
 
-                                <p mat-line>{{ step.description }} <span class="error-message" mat-line [title]="step.error" *ngIf="!!step.error">[{{ step.error }}]</span> </p>
-                            </mat-list-item>
+      <img mat-card-image src="https://lh3.googleusercontent.com/-gjqMycMM010/WbfiYyxqLtI/AAAAAAAABoA/wws3Psx0yngdvRMaN6sCc6k9XMikFGv5QCL0BGAYYCw/h928/2017-09-12.png">
+      <mat-card-content>
+        <br>
+        <p>
+          Allow this application to access your account information in order to setup:
+        </p>
+        <ul>
+          <li>An API.AI project to model your dialog;</li>
+          <li>An Actions project for your Assistant;</li>
+          <li>A Google Cloud Platform project.</li>
+        </ul>
+        <p>
+          This application will ask for these permissions (
+          <a href="https://developers.google.com/identity/protocols/googlescopes"
+            target="__target">scopes</a>):
+        </p>
+        <ul class="permissions">
+          <li *ngFor="let scope of scopes.google">{{ scope.description }}</li>
+        </ul>
+      </mat-card-content>
 
-                        </mat-list>
-                    </p>
-                </form>
-            </mat-card-content>
-        </mat-card>
+    </mat-card>
 
-        <mat-action-row>
+    <mat-action-row>
 
-            <ng-template #githubProjectNotForkedButton>
-                <a *ngIf="user.github" mat-button target="__blank" [href]="user.github?.project?.html_url">VIEW PROJECT</a>&nbsp;&nbsp;&nbsp;
-                <button mat-button color="warn" (click)="prevStep()">Previous</button>
-                <button mat-button color="primary" (click)="nextStep()">Next</button>
-            </ng-template>
+      <a *ngIf="!user.google" mat-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>&nbsp;&nbsp;&nbsp;
+      <button *ngIf="!user.google; else linkedGoogleRef" color="primary" mat-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
+      <ng-template #linkedGoogleRef>
+        <button color="warn" mat-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
+        <button mat-button color="warn" (click)="prevStep()">Previous</button>
+        <button mat-button color="primary" (click)="nextStep()">Next</button>
+      </ng-template>
 
-            <button *ngIf="!github.isAllOperationsOK(); else githubProjectNotForkedButton" color="primary" mat-raised-button (click)="forkGithubProject()">FORK PROJECT</button>
+    </mat-action-row>
 
-        </mat-action-row>
-    </mat-expansion-panel>
+  </mat-expansion-panel>
 
-    <!-- link google account  -->
-    <mat-expansion-panel [disabled]="!checkStepState(2)" [expanded]="selectedStep === 2" (opened)="setStep(2)" hideToggle="true">
+  <!-- setup cloud project  -->
+  <mat-expansion-panel [disabled]="!checkStepState(3)" [expanded]="selectedStep === 3" (opened)="setStep(3)" hideToggle="true">
 
-        <mat-expansion-panel-header>
+    <mat-expansion-panel-header>
 
-            <mat-panel-description *ngIf="user.google; else accountGoogleNotLinked">
-                Successfully linked as {{ user.google.name }}
-                <mat-icon class="header-image gcp"><img *ngIf="user.google" [src]="user.google.picture"></mat-icon>
-            </mat-panel-description>
+      <mat-panel-description *ngIf="user.google; else googleAccountNotLinked">
+        Setting projects for {{ user.google.name }}
+        <mat-icon class="header-image gcp"></mat-icon>
+      </mat-panel-description>
 
-            <ng-template #accountGoogleNotLinked>
-                <mat-panel-description>
-                    Link Your Google Account
-                    <mat-icon class="header-image gcp"></mat-icon>
-                </mat-panel-description>
-            </ng-template>
+      <ng-template #googleAccountNotLinked>
+        <mat-panel-description>
+          Setup the cloud projects
+          <mat-icon class="header-image gcp"></mat-icon>
+        </mat-panel-description>
+      </ng-template>
 
-        </mat-expansion-panel-header>
+    </mat-expansion-panel-header>
 
-        <mat-card class="card">
+    <mat-card class="card">
+      <mat-card-content>
 
-            <img mat-card-image src="https://lh3.googleusercontent.com/-gjqMycMM010/WbfiYyxqLtI/AAAAAAAABoA/wws3Psx0yngdvRMaN6sCc6k9XMikFGv5QCL0BGAYYCw/h928/2017-09-12.png">
-            <mat-card-content>
-                <br>
-                <p>
-                    Allow this application to access your account information in order to setup:
-                </p>
-                <ul>
-                    <li>An API.AI project to model your dialog;</li>
-                    <li>An Actions project for your Assistant;</li>
-                    <li>A Google Cloud Platform project.</li>
-                </ul>
-                <p>
-                    This application will ask for these permissions (<a href="https://developers.google.com/identity/protocols/googlescopes" target="__target">scopes</a>):
-                </p>
-                <ul class="permissions">
-                    <li *ngFor="let scope of scopes.google">{{ scope.description }}</li>
-                </ul>
-            </mat-card-content>
+        <form #gcpProjectForm="ngForm">
+          <div class="input-field col s6">
+            <mat-form-field>
+              <mat-icon matPrefix class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</mat-icon>
+              <input matInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text"
+                placeholder="Enter a new project ID or import existing" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6"
+                data-length="30">
+            </mat-form-field>
+          </div>
+          <p>
+            <mat-list dense>
+              <h3 mat-subheader>Applying operations</h3>
 
-        </mat-card>
+              <ng-template ngFor let-step [ngForOf]="gcp.operationSteps">
+                <mat-list-item *ngIf="step.enabled" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
 
-        <mat-action-row>
-
-            <a *ngIf="!user.google" mat-button target="__blank" href="https://cloud.google.com/">CREATE A TRIAL ACCOUNT</a>&nbsp;&nbsp;&nbsp;
-            <button *ngIf="!user.google; else linkedGoogleRef" color="primary" mat-raised-button (click)="link('GOOGLE')">LINK GOOGLE CLOUD PLATFORM</button>
-            <ng-template #linkedGoogleRef>
-                <button color="warn" mat-raised-button (click)="unlink('GOOGLE')">UNLINK GOOGLE ACCOUNT</button>
-                <button mat-button color="warn" (click)="prevStep()">Previous</button>
-                <button mat-button color="primary" (click)="nextStep()">Next</button>
-            </ng-template>
-
-        </mat-action-row>
-
-    </mat-expansion-panel>
-
-    <!-- setup cloud project  -->
-    <mat-expansion-panel [disabled]="!checkStepState(3)" [expanded]="selectedStep === 3" (opened)="setStep(3)" hideToggle="true">
-
-        <mat-expansion-panel-header>
-
-            <mat-panel-description *ngIf="user.google; else googleAccountNotLinked">
-                Setting projects for {{ user.google.name }}
-                <mat-icon class="header-image gcp"></mat-icon>
-            </mat-panel-description>
-
-            <ng-template #googleAccountNotLinked>
-                <mat-panel-description>
-                    Setup the cloud projects
-                    <mat-icon class="header-image gcp"></mat-icon>
-                </mat-panel-description>
-            </ng-template>
-
-        </mat-expansion-panel-header>
-
-        <mat-card class="card">
-            <mat-card-content>
-
-                <form #gcpProjectForm="ngForm">
-                    <div class="input-field col s6">
-                        <mat-form-field>
-                            <mat-icon matPrefix class="material-icons prefix" *ngIf="!gcp.operationSteps[1].isValid" (click)="randomProjectId()" style="cursor: pointer;">autorenew</mat-icon>
-                            <input matInput [disabled]="gcp.operationSteps[1].isValid" [(ngModel)]="projectId" name="project-id" id="project-id" type="text" placeholder="Enter a new project ID or import existing" required pattern="[a-z][a-z0-9-]+" maxlength="30" minlength="6" data-length="30">
-                        </mat-form-field>
+                  <div mat-list-icon>
+                    <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
+                    <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
+                    <div *ngIf="step.isWorking === true">
+                      <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
                     </div>
-                    <p>
-                        <mat-list dense>
-                            <h3 mat-subheader>Applying operations</h3>
+                  </div>
 
-                            <ng-template ngFor let-step [ngForOf]="gcp.operationSteps">
-                                <mat-list-item *ngIf="step.enabled" [ngClass]="{ 'isWorking': step.isWorking, 'isValid': step.isValid, 'isDirty': step.isDirty }">
+                  <p mat-line>{{ step.description }}
+                    <span class="error-message" mat-line [title]="step.error" *ngIf="!!step.error">[{{ step.error }}]</span>
+                  </p>
+                </mat-list-item>
+              </ng-template>
 
-                                    <div mat-list-icon>
-                                        <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
-                                        <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
-                                        <div *ngIf="step.isWorking === true">
-                                            <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
-                                        </div>
-                                    </div>
+            </mat-list>
+            <br>
+            <mat-divider></mat-divider>
+          </p>
+        </form>
+      </mat-card-content>
 
-                                    <p mat-line>{{ step.description }} <span class="error-message" mat-line [title]="step.error" *ngIf="!!step.error">[{{ step.error }}]</span> </p>
-                                </mat-list-item>
-                            </ng-template>
+    </mat-card>
 
-                        </mat-list>
-                        <br>
-                        <mat-divider></mat-divider>
-                    </p>
-                </form>
-            </mat-card-content>
+    <mat-action-row>
 
-        </mat-card>
+      <button *ngIf="!gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" mat-raised-button [disabled]="gcpProjectForm.invalid"
+        (click)="createGCPProjects()">SETUP</button>
+      <ng-template #projectCreatedDoneRef>
+        <button mat-button color="warn" (click)="prevStep()">Previous</button>
+        <button mat-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
+      </ng-template>
 
-        <mat-action-row>
+    </mat-action-row>
 
-            <button *ngIf="!gcp.isAllOperationsOK(); else projectCreatedDoneRef" color="primary" mat-raised-button [disabled]="gcpProjectForm.invalid" (click)="createGCPProjects()">SETUP</button>
-            <ng-template #projectCreatedDoneRef>
-                <button mat-button color="warn" (click)="prevStep()">Previous</button>
-                <button mat-button color="primary" (click)="nextStep()" [disabled]="gcpProjectForm.invalid">Next</button>
-            </ng-template>
+  </mat-expansion-panel>
 
-        </mat-action-row>
+  <!--clone and push cloud function  -->
+  <mat-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
+    <mat-expansion-panel-header>
+      <mat-panel-description>
+        Google Repository as a Remote
+        <mat-icon class="header-image"></mat-icon>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
 
-    </mat-expansion-panel>
+    <mat-card class="card">
+      <mat-card-content>
 
-    <!--clone and push cloud function  -->
-    <mat-expansion-panel [disabled]="!checkStepState(4)" [expanded]="selectedStep === 4" (opened)="setStep(4)" hideToggle="true">
-        <mat-expansion-panel-header>
-            <mat-panel-description>
-                Google Repository as a Remote
-                <mat-icon class="header-image"></mat-icon>
-            </mat-panel-description>
-        </mat-expansion-panel-header>
+        <h3>Adding a Repository as a Remote</h3>
 
-        <mat-card class="card">
-            <mat-card-content>
+        <p>
+          Open up the Google Cloud Shell and run the following commands.
+        </p>
+        <p>
+          <a mat-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/cloudshell/editor?project={{projectId}}&authuser=0&shellonly=false">OPEN CLOUD SHELL</a>
+        </p>
+        <p>
+          You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git
+          remotes.
+        </p>
 
-                <h3>Adding a Repository as a Remote</h3>
+        <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
+          <textarea #textareaRef_0 rows="1" disabled>curl http://actions.cloud/assets/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
+          <mat-icon (click)="copyText(textareaRef_1)" matPrefix>content_copy</mat-icon>
+        </p>
 
-                <p>
-                    Open up the Google Cloud Shell and run the following commands.
-                </p>
-                <p>
-                    <a mat-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/cloudshell/editor?project={{projectId}}&authuser=0&shellonly=false">OPEN CLOUD SHELL</a>
-                </p>
-                <p>
-                    You can add a Cloud Source Repository as a remote to a local Git repository and use it in the same way you use other Git remotes.
-                </p>
+        <br>
+        <h3>Using the repository as a remote</h3>
 
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
-                    <textarea #textareaRef_0 rows="1" disabled>curl http://actions.cloud/assets/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
-                    <mat-icon (click)="copyText(textareaRef_1)" matPrefix>content_copy</mat-icon>
-                </p>
+        <p>A Cloud Source Repository is a fully-featured Git repository. You can use the standard set of Git commands to interact
+          with the repository, including push, pull, clone and log.</p>
 
-                <br>
-                <h3>Using the repository as a remote</h3>
+        <br>
+        <h3>Pushing to a Cloud Source Repository</h3>
 
-                <p>A Cloud Source Repository is a fully-featured Git repository. You can use the standard set of Git commands to interact with the repository, including push, pull, clone and log.</p>
+        <p>To push from your local Git repository to the Cloud Source Repository:</p>
 
-                <br>
-                <h3>Pushing to a Cloud Source Repository</h3>
+        <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_6.__IS_COPY_OK }">
+          <textarea #textareaRef_6 rows="1" disabled>git push google master</textarea>
+          <mat-icon (click)="copyText(textareaRef_6)" matPrefix>content_copy</mat-icon>
+        </p>
 
-                <p>To push from your local Git repository to the Cloud Source Repository:</p>
+        <br>
+        <h3>Pulling from a Cloud Source Repository</h3>
 
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_6.__IS_COPY_OK }">
-                    <textarea #textareaRef_6 rows="1" disabled>git push google master</textarea>
-                    <mat-icon (click)="copyText(textareaRef_6)" matPrefix>content_copy</mat-icon>
-                </p>
+        <p>To pull from the Cloud Source Repository to your local Git repository:</p>
 
-                <br>
-                <h3>Pulling from a Cloud Source Repository</h3>
+        <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_7.__IS_COPY_OK }">
+          <textarea #textareaRef_7 rows="1" disabled>git pull google master</textarea>
+          <mat-icon (click)="copyText(textareaRef_7)" matPrefix>content_copy</mat-icon>
+        </p>
 
-                <p>To pull from the Cloud Source Repository to your local Git repository:</p>
+        <br>
+        <h3>Viewing the commit history from a Cloud Source Repository</h3>
 
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_7.__IS_COPY_OK }">
-                    <textarea #textareaRef_7 rows="1" disabled>git pull google master</textarea>
-                    <mat-icon (click)="copyText(textareaRef_7)" matPrefix>content_copy</mat-icon>
-                </p>
+        <p>To view the commit history:</p>
 
-                <br>
-                <h3>Viewing the commit history from a Cloud Source Repository</h3>
+        <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_8.__IS_COPY_OK }">
+          <textarea #textareaRef_8 rows="1" disabled>git log google/master</textarea>
+          <mat-icon (click)="copyText(textareaRef_8)" matPrefix>content_copy</mat-icon>
+        </p>
 
-                <p>To view the commit history:</p>
+      </mat-card-content>
+    </mat-card>
 
-                <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_8.__IS_COPY_OK }">
-                    <textarea #textareaRef_8 rows="1" disabled>git log google/master</textarea>
-                    <mat-icon (click)="copyText(textareaRef_8)" matPrefix>content_copy</mat-icon>
-                </p>
+    <mat-action-row>
+      <button mat-button color="warn" (click)="prevStep()">Previous</button>
+      <button mat-button color="primary" (click)="nextStep()">Next</button>
+    </mat-action-row>
 
-            </mat-card-content>
-        </mat-card>
+  </mat-expansion-panel>
 
-        <mat-action-row>
-            <button mat-button color="warn" (click)="prevStep()">Previous</button>
-            <button mat-button color="primary" (click)="nextStep()">Next</button>
-        </mat-action-row>
+  <!-- recap  -->
+  <mat-expansion-panel [disabled]="!checkStepState(5)" [expanded]="selectedStep === 5" (opened)="setStep(5)" hideToggle="true">
+    <mat-expansion-panel-header>
+      <mat-panel-description>
+        Actions on Goolge Wizard
+        <mat-icon class="header-image"></mat-icon>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
 
-    </mat-expansion-panel>
+    <mat-card class="card">
+      <img mat-card-image src="https://camo.githubusercontent.com/3feaf771c4b0ddf1dea041976d5f11d0bc518545/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f323030302f312a35312d51636a646a6c526979345f7961324e6a4132672e706e67">
+      <mat-card-content>
+        <p class="align-center">
+          <a mat-raised-button color="primary" target="__blank" href="https://console.actions.google.com/?autoImportProject={{projectId}}">ACTIONS CONSOLE</a>
+          <a mat-raised-button color="primary" target="__blank" href="https://console.api.ai/api-client/#/newAgent?projectId={{projectId}}">API.AI CONSOLE</a>
+          <a mat-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/home/dashboard?project={{projectId}}">CLOUD CONSOLE</a>
+        </p>
+      </mat-card-content>
+    </mat-card>
 
-    <!-- recap  -->
-    <mat-expansion-panel [disabled]="!checkStepState(5)" [expanded]="selectedStep === 5" (opened)="setStep(5)" hideToggle="true">
-        <mat-expansion-panel-header>
-            <mat-panel-description>
-                Actions on Goolge Wizard
-                <mat-icon class="header-image"></mat-icon>
-            </mat-panel-description>
-        </mat-expansion-panel-header>
+    <mat-action-row>
+      <button mat-button color="warn" (click)="prevStep()">Previous</button>
+      <button mat-button color="primary" (click)="nextStep()">End</button>
+    </mat-action-row>
 
-        <mat-card class="card">
-            <img mat-card-image src="https://camo.githubusercontent.com/3feaf771c4b0ddf1dea041976d5f11d0bc518545/68747470733a2f2f63646e2d696d616765732d312e6d656469756d2e636f6d2f6d61782f323030302f312a35312d51636a646a6c526979345f7961324e6a4132672e706e67">
-            <mat-card-content>
-                <p class="align-center">
-                    <a mat-raised-button color="primary" target="__blank" href="https://console.actions.google.com/?autoImportProject={{projectId}}">ACTIONS CONSOLE</a>
-                    <a mat-raised-button color="primary" target="__blank" href="https://console.api.ai/api-client/#/newAgent?projectId={{projectId}}">API.AI CONSOLE</a>
-                    <a mat-raised-button color="primary" target="__blank" href="https://console.cloud.google.com/home/dashboard?project={{projectId}}">CLOUD CONSOLE</a>
-                </p>
-            </mat-card-content>
-        </mat-card>
-
-        <mat-action-row>
-            <button mat-button color="warn" (click)="prevStep()">Previous</button>
-            <button mat-button color="primary" (click)="nextStep()">End</button>
-        </mat-action-row>
-
-    </mat-expansion-panel>
+  </mat-expansion-panel>
 
 </mat-accordion>

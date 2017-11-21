@@ -5,7 +5,8 @@ import { Component, OnInit } from "@angular/core";
   template: `
     <ng-content></ng-content>
   `,
-  styles: [`
+  styles: [
+    `
     :host {
       display: inline-block;
       width: 540px;
@@ -14,13 +15,11 @@ import { Component, OnInit } from "@angular/core";
     ::ng-deep app-carousel {
       display: block;
     }
-  `]
+  `
+  ]
 })
 export class CarouselComponent implements OnInit {
+  constructor() {}
 
-  constructor() { }
-
-  ngOnInit() {
-  }
-
+  ngOnInit() {}
 }

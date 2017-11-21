@@ -1,15 +1,15 @@
 :host {
-    background: url(/assets/parallax/background1.png);
-    display: block;
-    background-size: cover;
+  background: url(/assets/parallax/background1.png);
+  display: block;
+  background-size: cover;
 }
 
 div {
-    padding: 0;
+  padding: 0;
 }
 
 #app-logo {
-    height: 50px;
-    width: 50px;
-    fill: white;
+  height: 50px;
+  width: 50px;
+  fill: white;
 }

@@ -1,4 +1,4 @@
-import { Operation, Status } from './../gcp.types';
+import { Operation, Status } from "./../gcp.types";
 import { SessionService } from "./../session.service";
 import { GithubService } from "./../github.service";
 import { environment } from "./../../../environments/environment";
@@ -37,7 +37,6 @@ export class WizardComponent implements OnInit {
     public github: GithubService,
     public session: SessionService
   ) {
-
     this.isStepEnabled = Array(6).fill({ state: false });
     this.scopes = environment.scopes;
     this.selectedStep = 0;
@@ -48,7 +47,6 @@ export class WizardComponent implements OnInit {
   }
 
   ngOnInit() {
-
     this.projectId = this.session.restoreGCPProjectId();
 
     this.gcp.restoreToken();
@@ -68,7 +66,6 @@ export class WizardComponent implements OnInit {
     });
 
     this.gcp.onSessionExpired.subscribe(async _ => {
-      
       this.user.google = null;
       this.gcp.resetOperations();
       this.gcp.resetToken();
@@ -87,7 +84,7 @@ export class WizardComponent implements OnInit {
     }
 
     // restore github project info
-    const github = this.session.restoreOperation<any>('github');
+    const github = this.session.restoreOperation<any>("github");
     if (github && github["0"] && github["0"].url && this.user.github) {
       this.user.github.project = github["0"];
     }
@@ -111,20 +108,19 @@ export class WizardComponent implements OnInit {
   }
 
   initStepsState() {
-      if (this.user.github) {
-        this.setStepsState([0, 1], true);
-        const op = this.session.restoreOperation<any>('github');
-        if (op && op["0"]) {
-          this.setStepsState([2], true);
-        }
+    if (this.user.github) {
+      this.setStepsState([0, 1], true);
+      const op = this.session.restoreOperation<any>("github");
+      if (op && op["0"]) {
+        this.setStepsState([2], true);
       }
-      else {
-        this.setStepsState([0], true);
-      }
-      
-      if (this.user.google) {
-        this.setStepsState([2,3,4], true);
-      }
+    } else {
+      this.setStepsState([0], true);
+    }
+
+    if (this.user.google) {
+      this.setStepsState([2, 3, 4], true);
+    }
   }
 
   checkStepState(step: number) {
@@ -136,9 +132,9 @@ export class WizardComponent implements OnInit {
   }
 
   setStepsState(steps: number[], state: boolean) {
-    for(let i=0; i<steps.length; i++) {
+    for (let i = 0; i < steps.length; i++) {
       if (i < this.isStepEnabled.length && this.isStepEnabled[i]) {
-        this.isStepEnabled[ steps[i] ] = {state};
+        this.isStepEnabled[steps[i]] = { state };
       }
     }
   }
@@ -147,7 +143,7 @@ export class WizardComponent implements OnInit {
     if (!this.gcp.operationSteps[1].isValid) {
       this.projectId = generate({ words: 2, number: true }).dashed;
       if (this.projectId.length > 30) {
-        this.projectId = this.projectId.substring(0,30);
+        this.projectId = this.projectId.substring(0, 30);
       }
     }
   }
@@ -157,8 +153,7 @@ export class WizardComponent implements OnInit {
       const operation = await this.github.run();
       this.user.github.project = operation;
       this.setStepsState([2], true);
-    }
-    catch(e) {
+    } catch (e) {
       this.setStep(0);
     }
   }
@@ -166,14 +161,16 @@ export class WizardComponent implements OnInit {
   async createGCPProjects() {
     try {
       const operation = await this.gcp.run(this.projectId);
-      this.user.google.project = this.session.restoreOperation('google')['0'];
+      this.user.google.project = this.session.restoreOperation("google")["0"];
       this.session.setGCPProjectId(this.projectId);
       this.setStepsState([3], true);
       this.nextStep();
-    }
-    catch(e) {
+    } catch (e) {
       console.log(e);
-      if (e && e.status === "UNAUTHENTICATED" || e.status === "NO_ACCESS_TOKEN") {
+      if (
+        (e && e.status === "UNAUTHENTICATED") ||
+        e.status === "NO_ACCESS_TOKEN"
+      ) {
         // this.setStepsState([3, 4, 5, 6, 7], false);
       }
     }
@@ -224,7 +221,7 @@ export class WizardComponent implements OnInit {
       case Providers.GOOGLE:
         this.user.google = null;
         this.session.setUserInfo("google", null);
-        this.setStepsState([3,4], false);
+        this.setStepsState([3, 4], false);
         this.setStep(2);
         break;
 
@@ -232,21 +229,21 @@ export class WizardComponent implements OnInit {
         this.user.github = null;
         this.session.setUserInfo("github", null);
         this.setStepsState([0], true);
-        this.setStepsState([1,2,3,4], false);
+        this.setStepsState([1, 2, 3, 4], false);
         this.setStep(0);
         break;
     }
   }
 
   copyText(textareaRef: any) {
-    textareaRef.removeAttribute('disabled');
+    textareaRef.removeAttribute("disabled");
     textareaRef.focus();
     textareaRef.select();
-    textareaRef.setAttribute('disabled', true);
+    textareaRef.setAttribute("disabled", true);
     try {
-      textareaRef.__IS_COPY_OK = document.execCommand('copy');
+      textareaRef.__IS_COPY_OK = document.execCommand("copy");
     } catch (err) {
-      console.log('Unable to copy');
+      console.log("Unable to copy");
     }
   }
 }

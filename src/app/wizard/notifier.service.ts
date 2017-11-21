@@ -25,16 +25,16 @@ export class NotifierService {
     description: string = null,
     duration: number = 0
   ): boolean {
-
     let snackBar = null;
     if (operationType !== null) {
       this.service.operationSteps[operationType].isDirty = true;
       this.service.operationSteps[operationType].isWorking = isWorking;
       this.service.operationSteps[operationType].isValid = isValid;
 
-
       if (isValid) {
-        this.service.operationSteps[operationType].description = this.service.operationSteps[
+        this.service.operationSteps[
+          operationType
+        ].description = this.service.operationSteps[
           operationType
         ].description_2;
       }
@@ -42,18 +42,15 @@ export class NotifierService {
       if (description) {
         this.service.operationSteps[operationType].description = description;
       }
-
     }
 
-
     if (error) {
-
       if (operationType !== null) {
-        this.service.operationSteps[operationType].error = error.status || "ERROR";
+        this.service.operationSteps[operationType].error =
+          error.status || "ERROR";
       }
 
       if (error) {
-
         if (error.status && error.status.indexOf("ALREADY_EXISTS") !== -1) {
           // @todo: should we skip resources that already exist?
 
@@ -63,11 +60,9 @@ export class NotifierService {
           // }
 
           return false;
-
-        }
-        else if (
-          (error.code === 401 ||
-            (error.status && error.status.indexOf("UNAUTHENTICATED") !== -1))
+        } else if (
+          error.code === 401 ||
+          (error.status && error.status.indexOf("UNAUTHENTICATED") !== -1)
         ) {
           // handle the session expired case if code=401 or status=[UNAUTHENTICATED]
 
@@ -79,17 +74,13 @@ export class NotifierService {
             }
           );
           this.service.onSessionExpired.next(true);
-
         } else {
           snackBar = this.snackBar.open(error.message, "CLOSE", {
             duration
           });
         }
-
       }
-
     } else {
-
       if (operationType !== null) {
         this.service.operationSteps[operationType].error = "";
       }
@@ -99,7 +90,6 @@ export class NotifierService {
           this.service.resetOperations();
         });
       }
-
     }
   }
 }

@@ -1,178 +1,179 @@
 :host {
-    display: block;
-    width: 90vw;
-    max-width: 900px;
-    margin: auto auto;
-    text-align: left;
-    padding-bottom: 80px;
+  display: block;
+  width: 90vw;
+  max-width: 900px;
+  margin: auto auto;
+  text-align: left;
+  padding-bottom: 80px;
 }
 
 sup {
-    font-size: 0.5em;
-    top: -7px;
-    position: relative;
+  font-size: 0.5em;
+  top: -7px;
+  position: relative;
 }
 
 :host ul {
-    line-height: normal;
+  line-height: normal;
 }
 
 :host li {
-    margin-left: 20px;
-    list-style: initial;
+  margin-left: 20px;
+  list-style: initial;
 }
 
 :host mat-icon.prefix {
-    margin: 8px;
+  margin: 8px;
 }
 
 header {
-    width: 100%;
-    padding: 30px 0;
+  width: 100%;
+  padding: 30px 0;
 }
 
 header a {
-    display: flex;
+  display: flex;
 }
 
 header h2 {
-    padding: 0;
-    margin: 13px 0;
+  padding: 0;
+  margin: 13px 0;
 }
 
 a img {
-    margin: 10px;
+  margin: 10px;
 }
 
 @media (max-width: 600px) {
-     :host {
-        display: block;
-        width: 98vw;
-        margin: 10px auto;
-    }
+  :host {
+    display: block;
+    width: 98vw;
+    margin: 10px auto;
+  }
 }
 
 .header-image {
-    background-image: url('/assets/assistant.png');
-    background-size: contain;
+  background-image: url("/assets/assistant.png");
+  background-size: contain;
 }
 
 .header-image.gcp {
-    background-image: url('/assets/gcp.png');
+  background-image: url("/assets/gcp.png");
 }
 
 .header-image.github {
-    background-image: url('/assets/github.png');
+  background-image: url("/assets/github.png");
 }
 
 .header-image img {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
 }
 
 .permissions li {
-    padding: 6px;
+  padding: 6px;
 }
 
 .align-center {
-    text-align: center;
+  text-align: center;
 }
 
 mat-card-actions {
-    text-align: center;
+  text-align: center;
 }
 
 mat-card.card.mat-card {
-    box-shadow: none;
+  box-shadow: none;
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
 }
 
 mat-icon[mat-list-icon] {
-    color: green;
-    margin-top: -6px;
+  color: green;
+  margin-top: -6px;
 }
 
 span.error-message,
 mat-icon[mat-list-icon].error-message {
-    color: #F44336;
+  color: #f44336;
 }
 
 .skipped-message {
-    color: orange;
+  color: orange;
 }
 
 mat-progress-spinner {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 mat-list-item.mat-list-item {
-    color: lightgray;
-    height: 30px;
+  color: lightgray;
+  height: 30px;
 }
 
 mat-list-item.mat-list-item.isWorking {
-    font-weight: bold;
-    color: black;
+  font-weight: bold;
+  color: black;
 }
 
 mat-list-item.mat-list-item.isDirty {
-    color: black;
+  color: black;
 }
 
 :host .mat-list span {
-    display: inline;
+  display: inline;
 }
 
 .mat-expansion-panel-header-title,
 .mat-expansion-panel-header-description {
-    flex-basis: 0;
+  flex-basis: 0;
 }
 
 .mat-expansion-panel-header-description {
-    justify-content: space-between;
-    align-items: center;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.mat-expansion-panel-header:not([aria-disabled=true]) .mat-expansion-panel-header-description {
-    color: black;
+.mat-expansion-panel-header:not([aria-disabled="true"])
+  .mat-expansion-panel-header-description {
+  color: black;
 }
 
 pre {
-    overflow: hidden;
-    overflow-x: scroll;
-    padding: 8px;
+  overflow: hidden;
+  overflow-x: scroll;
+  padding: 8px;
 }
 
 textarea {
-    background: black;
-    padding: 15px 40px 0px 10px;
-    color: white;
-    margin: 0px;
-    width: 90%;
-    border: 0 none;
-    font-size: 1em;
-    font-family: monospace;
-    resize: none;
-    line-height: 1.5em;
-    overflow-x: scroll;
-    white-space: nowrap;
-    margin-right: 6px;
+  background: black;
+  padding: 15px 40px 0px 10px;
+  color: white;
+  margin: 0px;
+  width: 90%;
+  border: 0 none;
+  font-size: 1em;
+  font-family: monospace;
+  resize: none;
+  line-height: 1.5em;
+  overflow-x: scroll;
+  white-space: nowrap;
+  margin-right: 6px;
 }
 
 p.copy-command {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 p.copy-command mat-icon {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 p.copy-command.copy-ok mat-icon {
-    color: green;
+  color: green;
 }

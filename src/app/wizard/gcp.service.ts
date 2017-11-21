@@ -40,9 +40,7 @@ export class GcpService implements Runnable, OnSessionExpired {
   notifier: NotifierService;
   accessToken: string;
 
-  constructor(
-    public snackBar: MatSnackBar, 
-    public session: SessionService) {
+  constructor(public snackBar: MatSnackBar, public session: SessionService) {
     this.notifier = new NotifierService(snackBar).registerService(this);
     this.accessToken = null;
     this.onSessionExpired = new Subject();
@@ -137,7 +135,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       },
       // CheckingCloudFunctionPermissions
       {
-        enabled: false, 
+        enabled: false,
         isValid: false,
         isDirty: false,
         isWorking: false,
@@ -188,17 +186,16 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   restoreOperations() {
-    let restoredOperations = this.session.restoreOperation('google');
+    const restoredOperations = this.session.restoreOperation("google");
 
     if (restoredOperations) {
-      Object.keys(OperationType).forEach( key => {
+      Object.keys(OperationType).forEach(key => {
         if (restoredOperations[OperationType[key]]) {
           this.notifier.notify(OperationType[key], false, true);
         }
       });
     }
   }
-
 
   restoreToken() {
     this.accessToken = this.session.getAccessToken("google");
@@ -232,40 +229,39 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Just a macro that runs the same logic but with different methods from this class
-   * 
+   *
    * @param operationName The function name to invoke on this class
    * @param lastOperation last operation if any, null otherwise
    * @param operationType An operation type
    */
-  async runMacro(logic: Function, lastOperation: {}, operationType: OperationType) {
+  async runMacro(
+    logic: Function,
+    lastOperation: {},
+    operationType: OperationType
+  ) {
     let operation = null;
     if (this.isOperationEnabled(operationType)) {
       if (this.shouldSkip(operationType)) {
         this.notifier.notify(operationType, false, true);
       } else {
-
         if (lastOperation) {
           operation = this.guard(lastOperation) && (await logic());
-        }
-        else {
+        } else {
           operation = await logic();
         }
-        
+
         if (operation) {
           if (
-            (operation.error) && 
-            (
-              operation.error.status === "ALREADY_EXISTS"
-              || 
-              operation.error.code === 409 && operation.error.message.indexOf('You already own') !== -1
-            ) 
+            operation.error &&
+            (operation.error.status === "ALREADY_EXISTS" ||
+              (operation.error.code === 409 &&
+                operation.error.message.indexOf("You already own") !== -1))
           ) {
             this.session.saveOperation("google", operationType, operation);
             return {
-              "PREVIOUS_ENTITY_ALREADY_EXISTS": true
+              PREVIOUS_ENTITY_ALREADY_EXISTS: true
             } as Operation;
-          }
-          else if (operation.error) {
+          } else if (operation.error) {
             return Promise.reject(operation.error);
           } else {
             this.session.saveOperation("google", operationType, operation);
@@ -284,52 +280,88 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Start the creating process of the new project
-   * 
+   *
    * @param projectId the project ID to create on the GCP
    */
   async run(projectId: string) {
     if (this.accessToken) {
-      let lastOperation = null;  
-      lastOperation = await this.runMacro( async () => await this.createCloudProject(projectId),                  lastOperation,  OperationType.CreatingProject);
-      
-      lastOperation = await this.runMacro( async () => {
-        
-        let op;
-        if (lastOperation["PREVIOUS_ENTITY_ALREADY_EXISTS"]) {
-          op = await this.getCloudProjectIfAlreadyExists(projectId);
-        }
-        else {
-          op = await this.checkProjectAvailability(lastOperation);
-        }
-        return op;
+      let lastOperation = null;
+      lastOperation = await this.runMacro(
+        async () => await this.createCloudProject(projectId),
+        lastOperation,
+        OperationType.CreatingProject
+      );
 
-      }, lastOperation,  OperationType.CheckingProjectAvailability);
-      
-      lastOperation = await this.runMacro( async () => await this.checkBilling(),                                 lastOperation,  OperationType.CheckingBilling);
-      lastOperation = await this.runMacro( async () => await this.enablingBillingInfo(projectId, lastOperation),  lastOperation,  OperationType.EnablingBilling);
-      lastOperation = await this.runMacro( async () => await this.createCloudBucket(projectId),                   lastOperation,  OperationType.CreatingCloudBucket);
-      lastOperation = await this.runMacro( async () => await this.enablePermissionsForDataSink(projectId),        lastOperation,  OperationType.EnablePermissionsForGCPDataSink);
-      lastOperation = await this.runMacro( async () => await this.createTransferJob(projectId),                   lastOperation,  OperationType.UploadingProjectTemplate);
-      lastOperation = await this.runMacro( async () => await this.createCloudRepository(projectId),               lastOperation,  OperationType.CreatingCloudRepository);
-      lastOperation = await this.runMacro( async () => await this.checkCloudFunctionPermissions(projectId),       lastOperation,  OperationType.CheckingCloudFunctionPermissions);
-      lastOperation = await this.runMacro( async () => await this.enableCloudFunctionService(projectId),          lastOperation,  OperationType.EnablingCloudFunctionService);
-      
+      lastOperation = await this.runMacro(
+        async () => {
+          let op;
+          if (lastOperation["PREVIOUS_ENTITY_ALREADY_EXISTS"]) {
+            op = await this.getCloudProjectIfAlreadyExists(projectId);
+          } else {
+            op = await this.checkProjectAvailability(lastOperation);
+          }
+          return op;
+        },
+        lastOperation,
+        OperationType.CheckingProjectAvailability
+      );
+
+      lastOperation = await this.runMacro(
+        async () => await this.checkBilling(),
+        lastOperation,
+        OperationType.CheckingBilling
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.enablingBillingInfo(projectId, lastOperation),
+        lastOperation,
+        OperationType.EnablingBilling
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.createCloudBucket(projectId),
+        lastOperation,
+        OperationType.CreatingCloudBucket
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.enablePermissionsForDataSink(projectId),
+        lastOperation,
+        OperationType.EnablePermissionsForGCPDataSink
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.createTransferJob(projectId),
+        lastOperation,
+        OperationType.UploadingProjectTemplate
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.createCloudRepository(projectId),
+        lastOperation,
+        OperationType.CreatingCloudRepository
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.checkCloudFunctionPermissions(projectId),
+        lastOperation,
+        OperationType.CheckingCloudFunctionPermissions
+      );
+      lastOperation = await this.runMacro(
+        async () => await this.enableCloudFunctionService(projectId),
+        lastOperation,
+        OperationType.EnablingCloudFunctionService
+      );
+
       // @todo this step will be done by the user!!
       // lastOperation = await this.runMacro( async () => await this.createCloudFunction(projectId),                 lastOperation,  OperationType.CreatingCloudFunction);
-      
+
       if (this.isAllOperationsOK()) {
         return Promise.resolve(lastOperation);
       } else {
         return Promise.reject(lastOperation);
       }
     } else {
-
       console.warn("Google Access Token is not set", this.accessToken);
       this.notifier.notify(null, false, false, {
         message: "Your Google Cloud Platform account could not be linked."
       });
 
-      return Promise.reject({status: "NO_ACCESS_TOKEN"});
+      return Promise.reject({ status: "NO_ACCESS_TOKEN" });
     }
   }
 
@@ -351,8 +383,8 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   /**
-   * Request that a new Project be created. The result is an Operation which can be used to track the creation process. 
-   * 
+   * Request that a new Project be created. The result is an Operation which can be used to track the creation process.
+   *
    * @param projectId the project ID to create on the GCP
    */
   async createCloudProject(projectId: string) {
@@ -376,22 +408,20 @@ export class GcpService implements Runnable, OnSessionExpired {
       // error
       if (createdPorject.error.status === "ALREADY_EXISTS") {
         this.notifier.notify(
-            OperationType.CreatingProject,
-            false,
-            true,
-            null,
-            `Using existing project "${projectId}".`
-          );
-      }
-      else {
+          OperationType.CreatingProject,
+          false,
+          true,
+          null,
+          `Using existing project "${projectId}".`
+        );
+      } else {
         this.notifier.notify(
-            OperationType.CreatingProject,
-            false,
-            false,
-            createdPorject.error
-          );
+          OperationType.CreatingProject,
+          false,
+          false,
+          createdPorject.error
+        );
       }
-
     } else if (createdPorject.name) {
       // success
 
@@ -408,27 +438,24 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   async getCloudProjectIfAlreadyExists(projectId: string) {
-
     this.notifier.notify(
       OperationType.CheckingProjectAvailability,
       true,
       false
     );
-    
-    const createdPorject: Project = await this.fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`);
+
+    const createdPorject: Project = await this.fetch(
+      `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`
+    );
 
     if (createdPorject.error) {
-
       this.notifier.notify(
         OperationType.CheckingProjectAvailability,
         false,
         false,
         createdPorject.error
       );
-
-    }
-    else {
-
+    } else {
       this.notifier.notify(
         OperationType.CheckingProjectAvailability,
         false,
@@ -442,15 +469,16 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   /**
-   * Gets the latest state of a long-running operation. 
-   * Check if the created project is available. 
+   * Gets the latest state of a long-running operation.
+   * Check if the created project is available.
    * Starts polling (1 second) and exits when the project is ready.
-   * 
+   *
    * @param createdPorject The operation info received after starting created a new GCP project
    */
-  async checkProjectAvailability(createdPorject: Operation): Promise<Operation> {
+  async checkProjectAvailability(
+    createdPorject: Operation
+  ): Promise<Operation> {
     return new Promise((resolve, reject) => {
-
       this.notifier.notify(
         OperationType.CheckingProjectAvailability,
         true,
@@ -546,7 +574,7 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Enable the billing accound for the given project.
-   * 
+   *
    * @param projectId The project ID to link with `billingAccountName`.
    * @param billingAccountName The billing account information received from `checkBilling()`.
    */
@@ -653,7 +681,7 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Enable the Cloud Function service (using Google Service Management).
-   * 
+   *
    * @param projectId The project ID to link to this Cloud Function.
    */
   async enableCloudFunctionService(projectId) {
@@ -710,7 +738,7 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Create a new Cloud Function for the given project ID.
-   * 
+   *
    * @param projectId The project ID to link with the new Cloud Function.
    */
   async createCloudFunction(projectId) {
@@ -743,18 +771,17 @@ export class GcpService implements Runnable, OnSessionExpired {
       if (operation.error) {
         if (operation.error.status === "ALREADY_EXISTS") {
           this.notifier.notify(
-              OperationType.CreatingCloudFunction,
-              false,
-              true
-            );
-        }
-        else {
-            this.notifier.notify(
-              OperationType.CreatingCloudFunction,
-              false,
-              false,
-              operation.error
-            );
+            OperationType.CreatingCloudFunction,
+            false,
+            true
+          );
+        } else {
+          this.notifier.notify(
+            OperationType.CreatingCloudFunction,
+            false,
+            false,
+            operation.error
+          );
         }
         resolve(operation);
       } else {
@@ -808,7 +835,7 @@ export class GcpService implements Runnable, OnSessionExpired {
       {
         method: "POST",
         body: {
-          name: `projects/${projectId}/repos/default`,
+          name: `projects/${projectId}/repos/default`
           // @todo mirrorConfig seems to be read only!!!
           // mirrorConfig: {
           //   url: 'git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git',
@@ -822,20 +849,19 @@ export class GcpService implements Runnable, OnSessionExpired {
 
     if (repoInfo.error) {
       if (repoInfo.error.status === "ALREADY_EXISTS") {
-          this.notifier.notify(
-              OperationType.CreatingCloudRepository,
-              false,
-              true
-            );
-        }
-        else {
-          this.notifier.notify(
-            OperationType.CreatingCloudRepository,
-            false,
-            false,
-            repoInfo.error
-          );
-        }
+        this.notifier.notify(
+          OperationType.CreatingCloudRepository,
+          false,
+          true
+        );
+      } else {
+        this.notifier.notify(
+          OperationType.CreatingCloudRepository,
+          false,
+          false,
+          repoInfo.error
+        );
+      }
     } else {
       // success
       this.notifier.notify(
@@ -851,23 +877,26 @@ export class GcpService implements Runnable, OnSessionExpired {
   }
 
   async mirrorGithubRepoToCloudRepo(projectId) {
-
-    const githubUrl = encodeURI("git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git");
+    const githubUrl = encodeURI(
+      "git@github.com:actions-on-google-wizard/actions-on-google-project-template-gcp.git"
+    );
     const cloudRepoName = "default";
-    
+
     // document.cookie = "CONSENT=YES+FR.en+20160410-02-0; expires=Thu, 01 Jan 2222 00:00:00 GMT";
 
-    const syncInfo = await this.fetch(`https://console.cloud.google.com/m/clouddev/reposync/github/connect?pid=${projectId}&repoName=${cloudRepoName}&url=${ githubUrl }`, {
-      method: "POST",
-      // headers: {
-      //   "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-      // },
-      // credentials: "include", // send cookie
-      // body: {}
-      mode: "no-cors"
-    });
+    const syncInfo = await this.fetch(
+      `https://console.cloud.google.com/m/clouddev/reposync/github/connect?pid=${projectId}&repoName=${cloudRepoName}&url=${githubUrl}`,
+      {
+        method: "POST",
+        // headers: {
+        //   "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+        // },
+        // credentials: "include", // send cookie
+        // body: {}
+        mode: "no-cors"
+      }
+    );
     console.log(syncInfo);
-    
   }
 
   async createCloudBucket(projectId: string) {
@@ -884,16 +913,18 @@ export class GcpService implements Runnable, OnSessionExpired {
     );
 
     if (bucketInfo.error) {
-      if(bucketInfo.error.code === 409 && bucketInfo.error.message.indexOf('You already own this bucket') !== -1) {
+      if (
+        bucketInfo.error.code === 409 &&
+        bucketInfo.error.message.indexOf("You already own this bucket") !== -1
+      ) {
         this.notifier.notify(
-            OperationType.CreatingCloudBucket,
-            false,
-            true,
-            null,
-            "Using existing bucket."
-          );
-      }
-      else {
+          OperationType.CreatingCloudBucket,
+          false,
+          true,
+          null,
+          "Using existing bucket."
+        );
+      } else {
         this.notifier.notify(
           OperationType.CreatingCloudBucket,
           false,
@@ -1081,7 +1112,7 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   /**
    * Run a block of code every 1 second.
-   * 
+   *
    * @param callback The code to be executed every 1 second
    */
   poll(callback: Function, max = 20, timeoutCallback: Function = () => {}) {
@@ -1106,14 +1137,12 @@ export class GcpService implements Runnable, OnSessionExpired {
 
   isAllOperationsOK() {
     return this.operationSteps
-      .filter(s => s.enabled)  
+      .filter(s => s.enabled)
       .every(s => s.isValid === true);
   }
 
   async fetch(url, opts = {} as any): Promise<{ [key: string]: string }> {
-
     if (this.accessToken) {
-
       console.info("[REQUESTING]", url);
       console.info(opts);
 
@@ -1123,7 +1152,8 @@ export class GcpService implements Runnable, OnSessionExpired {
 
       opts.headers = opts.headers || {};
       opts.headers["Authorization"] = `Bearer ${this.accessToken}`;
-      opts.headers["Content-Type"] = opts.headers["Content-Type"] || "application/json";
+      opts.headers["Content-Type"] =
+        opts.headers["Content-Type"] || "application/json";
 
       // url = `${url}&access_token=${this.accessToken}`;
 
@@ -1132,12 +1162,9 @@ export class GcpService implements Runnable, OnSessionExpired {
       console.info(json);
 
       return json;
-
-    }
-    else {
-      this.notifier.notify(null, false, false, {status: "UNAUTHENTICATED"});
+    } else {
+      this.notifier.notify(null, false, false, { status: "UNAUTHENTICATED" });
       return null;
     }
-
   }
 }

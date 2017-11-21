@@ -9,17 +9,14 @@ import { AppComponent } from "./app.component";
 import { WelcomeComponent } from "./welcome/welcome.component";
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    WelcomeComponent
-  ],
+  declarations: [AppComponent, WelcomeComponent],
   imports: [
     BrowserModule,
     MatModule,
     WizardModule,
-    RouterModule.forRoot(routes, {useHash: true})
+    RouterModule.forRoot(routes, { useHash: true })
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}
