@@ -4,7 +4,7 @@ import { Injectable } from "@angular/core";
 import { AngularFireDatabase } from "angularfire2/database";
 import * as firebase from "firebase";
 import { OperationType } from "./gcp.types";
-import "rxjs/add/operator/take";
+import { take } from "rxjs/operators/take";
 
 @Injectable()
 export class SessionService {
@@ -28,9 +28,11 @@ export class SessionService {
     return new Promise((resolve, reject) => {
       if (baEmail && baToken) {
         this.db
-          .object(`/ba/` + baToken)
-          .valueChanges<{ email: string }>()
-          .take(1)
+          .object<{ email: string }>(`/ba/` + baToken)
+          .valueChanges()
+          .pipe(
+            take(1)
+          )
           .subscribe(
             async data => {
               if (data && data.email === baEmail) {
