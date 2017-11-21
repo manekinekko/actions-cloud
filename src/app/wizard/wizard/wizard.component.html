@@ -30,7 +30,7 @@
     </mat-expansion-panel-header>
 
     <mat-card class="card">
-      <img mat-card-image src="https://enterprise.github.com/assets/home/integrations-graphic-751d7041ec159aad4acdf01d30a0685a6be2cf2b76eb2390d69f90e4ff5c67a7.svg"
+      <img mat-card-image src="assets/github-integration.svg"
       />
       <mat-card-content>
         <br>
@@ -88,7 +88,7 @@
                   <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
                   <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
                   <div *ngIf="step.isWorking === true">
-                    <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
+                    <mat-progress-spinner diameter="24" color="primary" mode="indeterminate"></mat-progress-spinner>
                   </div>
                 </div>
 
@@ -139,7 +139,7 @@
 
     <mat-card class="card">
 
-      <img mat-card-image src="https://lh3.googleusercontent.com/-gjqMycMM010/WbfiYyxqLtI/AAAAAAAABoA/wws3Psx0yngdvRMaN6sCc6k9XMikFGv5QCL0BGAYYCw/h928/2017-09-12.png">
+      <img mat-card-image src="assets/Google_Cloud_Platform_Logo.png">
       <mat-card-content>
         <br>
         <p>
@@ -218,7 +218,7 @@
                     <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && !step.isValid)" class="error-message">close</mat-icon>
                     <mat-icon mat-list-icon *ngIf="step.isDirty && (!step.isWorking && step.isValid)">done</mat-icon>
                     <div *ngIf="step.isWorking === true">
-                      <mat-progress-spinner color="primary" mode="indeterminate"></mat-progress-spinner>
+                      <mat-progress-spinner diameter="24" color="primary" mode="indeterminate"></mat-progress-spinner>
                     </div>
                   </div>
 
@@ -277,7 +277,7 @@
 
         <p class="copy-command" [ngClass]="{ 'copy-ok': textareaRef_0.__IS_COPY_OK }">
           <textarea #textareaRef_0 rows="1" disabled>curl http://actions.cloud/assets/starter.sh | bash -s -- -t {{ user.github?.login }} -p {{ projectId }}</textarea>
-          <mat-icon (click)="copyText(textareaRef_1)" matPrefix>content_copy</mat-icon>
+          <mat-icon (click)="copyText(textareaRef_0)" matPrefix>content_copy</mat-icon>
         </p>
 
         <br>
