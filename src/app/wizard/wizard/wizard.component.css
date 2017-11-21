@@ -105,10 +105,6 @@ mat-icon[mat-list-icon].error-message {
   color: orange;
 }
 
-mat-progress-spinner {
-  width: 24px;
-  height: 24px;
-}
 
 mat-list-item.mat-list-item {
   color: lightgray;
