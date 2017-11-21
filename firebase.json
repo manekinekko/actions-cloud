@@ -8,7 +8,7 @@
         ],
         "redirects": [{
             "source": "/gcp",
-            "destination": "http://zoubda.fr/shared/starter.sh",
+            "destination": "https://actions.cloud/assets/starter.sh",
             "type": 302
         }]
     },
