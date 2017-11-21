@@ -43,5 +43,6 @@ yarn-error.log
 Thumbs.db
 functions/node_modules
 
-
+# custom
 tools/beta-access-firebase-codes.json
+bazel-*

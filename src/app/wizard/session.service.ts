@@ -6,6 +6,10 @@ import * as firebase from "firebase";
 import { OperationType } from "./gcp.types";
 import { take } from "rxjs/operators/take";
 
+export interface Email {
+  email: string;
+}
+
 @Injectable()
 export class SessionService {
   constructor(
@@ -28,13 +32,13 @@ export class SessionService {
     return new Promise((resolve, reject) => {
       if (baEmail && baToken) {
         this.db
-          .object<{ email: string }>(`/ba/` + baToken)
+          .object<Email>(`/ba/` + baToken)
           .valueChanges()
           .pipe(
             take(1)
           )
           .subscribe(
-            async data => {
+            async (data: Email) => {
               if (data && data.email === baEmail) {
                 try {
                   await this.db.object(`/ba/` + baToken).update({

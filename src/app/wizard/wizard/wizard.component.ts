@@ -6,7 +6,7 @@ import { GcpService } from "./../gcp.service";
 import { Component, OnInit, ElementRef } from "@angular/core";
 import * as firebase from "firebase/app";
 import { AngularFireAuth } from "angularfire2/auth";
-import * as generate from "project-name-generator";
+const generate =  require("project-name-generator");
 
 export enum Providers {
   GOOGLE = "GOOGLE",

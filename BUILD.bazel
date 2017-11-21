@@ -1,0 +1,25 @@
+package(default_visibility = ["//visibility:public"])
+exports_files(["tsconfig.json"])
+
+# NOTE: this will move to node_modules/BUILD in a later release
+
+# NOTE2: filenames with "space" are not accepted!
+
+filegroup(
+    name = "node_modules",
+    srcs = glob(["/".join(["node_modules", pkg, "**", ext]) for pkg in [
+        "angularfire2",
+        "firebase",
+        "tsickle",
+        "typescript",
+        "@types",
+        "@angular",
+        "project-name-generator",
+        "rxjs",
+        "zone.js"
+    ] for ext in [
+        "*.js",
+        "*.json",
+        "*.d.ts",
+    ]], exclude=[]),
+)
